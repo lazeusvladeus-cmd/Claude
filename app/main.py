@@ -7,6 +7,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand
 
 from app.config import settings
 from app.handlers import callbacks, commands, text, voice
@@ -15,6 +16,18 @@ from app.scheduler import start_scheduler
 from app.security import AllowlistMiddleware
 
 logger = logging.getLogger(__name__)
+
+_BOT_COMMANDS = [
+    BotCommand(command="stats", description="Spending in the last 7 days"),
+    BotCommand(command="month", description="Last 30 days, vs the month before"),
+    BotCommand(command="advice", description="Personalized savings suggestions"),
+    BotCommand(command="today", description="Remaining calendar events today"),
+    BotCommand(command="budget", description="Check your monthly budget usage"),
+    BotCommand(command="setbudget", description="Set or change your monthly budget"),
+    BotCommand(command="undo", description="Remove the most recent transaction"),
+    BotCommand(command="sheet", description="Link to your Google Sheet ledger"),
+    BotCommand(command="help", description="What this bot can do"),
+]
 
 
 async def main() -> None:
@@ -41,6 +54,7 @@ async def main() -> None:
     logger.info("Bot starting. Allowed users: %s", settings.allowed_user_ids)
     try:
         await bot.delete_webhook(drop_pending_updates=True)
+        await bot.set_my_commands(_BOT_COMMANDS)
         await dp.start_polling(bot)
     finally:
         scheduler.shutdown(wait=False)

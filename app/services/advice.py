@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from app.config import settings
 from app.models import Transaction
+from app.services import budget
 from app.services.nlp import generate_savings_advice
 from app.services.recurring import detect_recurring_charges
-from app.services.stats import PeriodStats, compute_period_stats, since_days_ago
+from app.services.stats import PeriodStats, compute_period_stats, format_trend, since_days_ago, start_of_this_month
 
 
 def _build_summary_text(stats: PeriodStats, recurring, budget_used_pct: float | None) -> str:
@@ -27,11 +28,16 @@ def _build_summary_text(stats: PeriodStats, recurring, budget_used_pct: float | 
 
 async def build_savings_digest(all_transactions: list[Transaction]) -> str:
     stats = await compute_period_stats(all_transactions, since=since_days_ago(30))
+    previous_stats = await compute_period_stats(
+        all_transactions, since=since_days_ago(60), until=since_days_ago(30)
+    )
     recurring = detect_recurring_charges([t for t in all_transactions if t.timestamp >= since_days_ago(90)])
 
     budget_used_pct = None
-    if settings.monthly_budget:
-        budget_used_pct = (stats.total_spent / settings.monthly_budget) * 100
+    effective_budget = await budget.get_effective_budget()
+    if effective_budget:
+        month_to_date = await compute_period_stats(all_transactions, since=start_of_this_month())
+        budget_used_pct = (month_to_date.total_spent / effective_budget) * 100
 
     if stats.transaction_count == 0:
         return (
@@ -44,6 +50,9 @@ async def build_savings_digest(all_transactions: list[Transaction]) -> str:
 
     header = "💡 <b>Your weekly savings digest</b>\n\n"
     body = f"Last 30 days: <b>{settings.base_currency} {stats.total_spent:,.2f}</b> spent across {stats.transaction_count} transactions.\n"
+    trend = format_trend(stats.total_spent, previous_stats.total_spent)
+    if trend:
+        body += f"{trend} (previous 30 days)\n"
     if budget_used_pct is not None:
         warn = " ⚠️" if budget_used_pct >= 90 else ""
         body += f"Monthly budget used: <b>{budget_used_pct:.0f}%</b>{warn}\n"

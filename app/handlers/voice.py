@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from aiogram import F, Router
+from aiogram.enums import ChatAction
 from aiogram.types import Message
 
 from app.handlers.common import handle_transcript
@@ -27,6 +28,7 @@ async def on_voice_message(message: Message) -> None:
         return
 
     status = await message.answer("🎙️ Transcribing…")
+    await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
         tg_file = await message.bot.get_file(file.file_id)
         buf = await message.bot.download_file(tg_file.file_path)

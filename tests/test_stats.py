@@ -3,7 +3,14 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.models import Direction, Transaction
-from app.services.stats import compute_period_stats, format_stats_message, since_days_ago
+from app.services.stats import (
+    compute_period_stats,
+    format_stats_message,
+    format_trend,
+    month_key,
+    since_days_ago,
+    start_of_this_month,
+)
 from app.services.recurring import detect_recurring_charges
 
 
@@ -76,6 +83,49 @@ def test_detect_recurring_charges_ignores_irregular_intervals():
     ]
     results = detect_recurring_charges(txs)
     assert results == []
+
+
+@pytest.mark.asyncio
+async def test_compute_period_stats_respects_until_bound():
+    txs = [_tx(days_ago=5, amount=10), _tx(days_ago=15, amount=20), _tx(days_ago=25, amount=30)]
+    stats = await compute_period_stats(txs, since=since_days_ago(20), until=since_days_ago(10))
+    assert stats.total_spent == 20  # only the days_ago=15 transaction falls in [20, 10) days ago
+    assert stats.transaction_count == 1
+
+
+def test_format_trend_reports_increase():
+    trend = format_trend(current_total=150, previous_total=100)
+    assert "50%" in trend
+    assert "more" in trend
+    assert "📈" in trend
+
+
+def test_format_trend_reports_decrease():
+    trend = format_trend(current_total=50, previous_total=100)
+    assert "50%" in trend
+    assert "less" in trend
+    assert "📉" in trend
+
+
+def test_format_trend_handles_no_previous_baseline():
+    assert format_trend(current_total=50, previous_total=0) is None
+
+
+def test_format_trend_handles_roughly_equal():
+    trend = format_trend(current_total=100.5, previous_total=100)
+    assert "same" in trend.lower()
+
+
+def test_start_of_this_month_is_first_day_midnight():
+    start = start_of_this_month()
+    assert start.day == 1
+    assert start.hour == 0 and start.minute == 0 and start.second == 0
+
+
+def test_month_key_format():
+    key = month_key()
+    assert len(key) == 7  # "YYYY-MM"
+    assert key[4] == "-"
 
 
 def test_detect_recurring_charges_ignores_income():

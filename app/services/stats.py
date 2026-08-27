@@ -9,6 +9,7 @@ import io
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import matplotlib
 
@@ -32,11 +33,15 @@ class PeriodStats:
         return self.total_income - self.total_spent
 
 
-async def compute_period_stats(transactions: list[Transaction], since: datetime) -> PeriodStats:
+async def compute_period_stats(
+    transactions: list[Transaction], since: datetime, until: datetime | None = None
+) -> PeriodStats:
     stats = PeriodStats()
     for tx in transactions:
         tx_time = tx.timestamp if tx.timestamp.tzinfo else tx.timestamp.replace(tzinfo=timezone.utc)
         if tx_time < since:
+            continue
+        if until is not None and tx_time >= until:
             continue
         amount_base = await to_base_currency(tx.amount, tx.currency)
         if tx.direction == Direction.EXPENSE:
@@ -79,12 +84,14 @@ def render_category_pie_chart(stats: PeriodStats, title: str) -> bytes | None:
     return buf.read()
 
 
-def format_stats_message(stats: PeriodStats, label: str) -> str:
+def format_stats_message(stats: PeriodStats, label: str, trend: str | None = None) -> str:
     if stats.transaction_count == 0:
         return f"No transactions logged {label}."
 
     lines = [f"📊 <b>Spending {label}</b>", ""]
     lines.append(f"💸 Spent: <b>{settings.base_currency} {stats.total_spent:,.2f}</b>")
+    if trend:
+        lines.append(trend)
     if stats.total_income > 0:
         lines.append(f"💰 Income: <b>{settings.base_currency} {stats.total_income:,.2f}</b>")
         net_emoji = "✅" if stats.net >= 0 else "⚠️"
@@ -104,3 +111,31 @@ def format_stats_message(stats: PeriodStats, label: str) -> str:
 
 def since_days_ago(n: int) -> datetime:
     return datetime.now(timezone.utc) - timedelta(days=n)
+
+
+def start_of_this_month() -> datetime:
+    """Calendar-month boundary in the configured local timezone — what "monthly
+    budget" naturally means, as opposed to a rolling 30-day window."""
+    local_tz = ZoneInfo(settings.timezone)
+    now_local = datetime.now(local_tz)
+    return now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def month_key(dt: datetime | None = None) -> str:
+    """A stable "YYYY-MM" string in the configured local timezone, used to detect
+    when a new calendar month has started (e.g. to reset budget alert state)."""
+    local_tz = ZoneInfo(settings.timezone)
+    moment = (dt or datetime.now(timezone.utc)).astimezone(local_tz)
+    return moment.strftime("%Y-%m")
+
+
+def format_trend(current_total: float, previous_total: float) -> str | None:
+    """A short "vs previous period" line, or None if there's nothing meaningful to compare."""
+    if previous_total <= 0:
+        return None
+    change_pct = ((current_total - previous_total) / previous_total) * 100
+    if abs(change_pct) < 1:
+        return "↔️ About the same as the previous period"
+    arrow = "📈" if change_pct > 0 else "📉"
+    direction = "more" if change_pct > 0 else "less"
+    return f"{arrow} {abs(change_pct):.0f}% {direction} than the previous period"

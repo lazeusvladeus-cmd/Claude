@@ -21,9 +21,12 @@ logger = logging.getLogger(__name__)
 
 _SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 _TRANSACTIONS_SHEET = "Transactions"
+_SETTINGS_SHEET = "Settings"
 
 _lock = asyncio.Lock()  # serialize writes; gspread client isn't safe for concurrent use
+_settings_lock = asyncio.Lock()  # separate lock: settings reads/writes shouldn't queue behind transaction ones
 _worksheet_cache: gspread.Worksheet | None = None  # avoids re-opening the sheet on every call
+_settings_worksheet_cache: gspread.Worksheet | None = None
 
 
 class SheetsError(RuntimeError):
@@ -43,15 +46,18 @@ def _client() -> gspread.Client:
     return gspread.authorize(creds)
 
 
-def _get_or_create_worksheet_sync() -> gspread.Worksheet:
+def _open_spreadsheet_sync() -> gspread.Spreadsheet:
     try:
-        sh = _client().open_by_key(settings.google_sheet_id)
+        return _client().open_by_key(settings.google_sheet_id)
     except gspread.exceptions.APIError as exc:
         raise SheetsError(
             "Could not open the configured Google Sheet. Double-check GOOGLE_SHEET_ID and that "
             "the sheet is shared with the service account's client_email as an Editor."
         ) from exc
 
+
+def _get_or_create_worksheet_sync() -> gspread.Worksheet:
+    sh = _open_spreadsheet_sync()
     try:
         ws = sh.worksheet(_TRANSACTIONS_SHEET)
     except gspread.exceptions.WorksheetNotFound:
@@ -149,3 +155,54 @@ def _row_to_transaction(row: list[str]) -> Transaction:
 
 def sheet_url() -> str:
     return f"https://docs.google.com/spreadsheets/d/{settings.google_sheet_id}/edit"
+
+
+# --- Settings tab: a tiny key/value store for things that should be user-adjustable at
+# runtime (e.g. the monthly budget) without needing a redeploy to change an env var. ---
+
+
+def _get_or_create_settings_worksheet_sync() -> gspread.Worksheet:
+    sh = _open_spreadsheet_sync()
+    try:
+        ws = sh.worksheet(_SETTINGS_SHEET)
+    except gspread.exceptions.WorksheetNotFound:
+        ws = sh.add_worksheet(title=_SETTINGS_SHEET, rows=50, cols=2)
+        ws.append_row(["key", "value"])
+    return ws
+
+
+async def _settings_worksheet(force_refresh: bool = False) -> gspread.Worksheet:
+    global _settings_worksheet_cache
+    if _settings_worksheet_cache is None or force_refresh:
+        _settings_worksheet_cache = await asyncio.to_thread(_get_or_create_settings_worksheet_sync)
+    return _settings_worksheet_cache
+
+
+async def get_setting(key: str) -> str | None:
+    """Look up a value from the Settings tab, or None if it isn't set."""
+    async with _settings_lock:
+        ws = await _settings_worksheet()
+        try:
+            rows = await asyncio.to_thread(ws.get_all_values)
+        except gspread.exceptions.APIError:
+            ws = await _settings_worksheet(force_refresh=True)
+            rows = await asyncio.to_thread(ws.get_all_values)
+
+    for row in rows[1:]:  # skip header
+        if len(row) >= 2 and row[0] == key:
+            return row[1]
+    return None
+
+
+async def set_setting(key: str, value: str) -> None:
+    """Upsert a key/value pair in the Settings tab."""
+    async with _settings_lock:
+        ws = await _settings_worksheet()
+        rows = await asyncio.to_thread(ws.get_all_values)
+
+        for i, row in enumerate(rows[1:], start=2):  # 1-indexed, +1 for header
+            if len(row) >= 1 and row[0] == key:
+                await asyncio.to_thread(ws.update, f"A{i}:B{i}", [[key, value]])
+                return
+
+        await asyncio.to_thread(ws.append_row, [key, value])

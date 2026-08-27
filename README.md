@@ -16,8 +16,13 @@ a hard allowlist, no accounts, no multi-tenant anything.
   it never silently writes something to your ledger.
 - ✏️ **One-tap corrections.** Wrong category or mixed up income/expense?
   Fix it with inline buttons before saving, or `/undo` right after.
-- 📊 **Stats.** `/stats` (7 days) and `/month` (30 days) — a category
-  breakdown as text plus a pie chart, normalized across currencies.
+- 📊 **Stats, with trend.** `/stats` (7 days) and `/month` (30 days vs. the
+  30 days before) — a category breakdown as text plus a pie chart, normalized
+  across currencies, with an at-a-glance "up/down vs. last period" line.
+- 🎯 **A real, live-adjustable budget.** `/setbudget 1000` any time — no env
+  var or redeploy needed. `/budget` shows a progress bar and how much is
+  left. Cross 80% or 100% of it and you get pinged **the moment it happens**,
+  not buried in next week's digest.
 - 💡 **Savings advice.** `/advice` and a weekly digest analyze your spending,
   flag recurring subscriptions you might have forgotten about, and give
   specific suggestions (not "make a budget" — actual numbers).
@@ -25,6 +30,9 @@ a hard allowlist, no accounts, no multi-tenant anything.
   event; `/today` lists what's left today.
 - 📄 **Google Sheets storage.** Your ledger is a normal spreadsheet you can
   open, filter, and pivot yourself, any time — `/sheet` links straight to it.
+- 🧭 **No commands to memorize.** A persistent quick-action keyboard (Stats /
+  Advice / Today / Sheet / Help) sits right above the keyboard, and every
+  command shows up with a description in Telegram's native `/` menu.
 
 ## Architecture, in one paragraph
 
@@ -134,8 +142,10 @@ you'll actually want to look at:
 - `TIMEZONE` — an IANA name like `Europe/Kyiv`. Controls calendar reminder
   timing and the weekly digest send time.
 - `CALENDAR_REMINDER_MINUTES_BEFORE` — default 20.
-- `MONTHLY_BUDGET` — leave blank to skip budget tracking; set a number in
-  `BASE_CURRENCY` to get a "% of budget used" line in the weekly digest.
+- `MONTHLY_BUDGET` — an optional starting default; leave blank if you'd
+  rather set it from inside the bot with `/setbudget` once it's running
+  (that's the normal way to do it day-to-day — no redeploy needed, and it
+  overrides this env var once set).
 
 ### 5. Run it
 
@@ -187,6 +197,21 @@ you'd need are just:
 
 Ask any time if you'd like the actual step-by-step Shortcut built out later.
 
+### 7. Sharing this with friends
+
+Do this, **not** adding their Telegram IDs to your own bot — an important
+distinction. This bot is deliberately single-owner: `ALLOWED_TELEGRAM_USER_IDS`
+locks it to whoever you list, and everyone listed shares one Google Sheet.
+Adding a friend to *your* bot means their spending lands in *your* spreadsheet,
+which is neither what they'd want nor what you'd want.
+
+The right way to share it: each friend deploys their **own copy** — their own
+bot (via their own BotFather chat), their own OpenAI key, their own Google
+Sheet, their own `.env`. This repo is already built for that (nothing is
+hardcoded to you), so it's exactly the steps above, done once per person.
+If you want to make that easier, the friendliest thing to hand them is this
+repo's link plus this README — everything they need is here.
+
 ---
 
 ## Commands
@@ -196,12 +221,18 @@ Ask any time if you'd like the actual step-by-step Shortcut built out later.
 | *(voice note)* | Transcribes, parses, asks you to confirm before saving |
 | *(any text)* | Same, without the transcription step |
 | `/stats` | Spending in the last 7 days, with a chart |
-| `/month` | Spending in the last 30 days, with a chart |
+| `/month` | Spending in the last 30 days vs. the 30 days before, with a chart |
 | `/advice` | On-demand savings suggestions |
 | `/today` | Remaining calendar events today |
+| `/budget` | Progress bar + how much of your monthly budget is left |
+| `/setbudget <amount>` | Set or change your monthly budget, live |
 | `/undo` | Remove the most recent transaction |
 | `/sheet` | Link to your Google Sheet ledger |
 | `/help` | Command list, inside the bot |
+
+All of the above (except `/setbudget`, `/undo` and `/month`, kept off the
+persistent keyboard so it stays to five buttons) are also one tap away on the
+bottom quick-action keyboard.
 
 ## Repository layout
 
@@ -212,22 +243,23 @@ app/
   models.py            ParsedTransaction / Transaction / categories
   formatting.py         shared "render a transaction as a Telegram message" logic
   pending_store.py       short-lived holding area for not-yet-confirmed transactions
-  keyboards.py            inline keyboards
+  keyboards.py            inline keyboards + the persistent quick-action menu
   scheduler.py             calendar reminders + weekly digest, background jobs
-  main.py                   entry point
+  main.py                   entry point + native command menu registration
   handlers/
     voice.py, text.py         the two entry points into the same parsing pipeline
-    commands.py                 slash commands
-    callbacks.py                 confirm / edit / discard / undo button logic
+    commands.py                 slash commands + their quick-action-button twins
+    callbacks.py                 confirm / edit / discard / undo / budget-alert logic
   services/
     transcription.py    OpenAI Whisper
     nlp.py                OpenAI GPT: text -> structured transaction, savings advice
-    sheets.py               Google Sheets read/write
+    sheets.py               Google Sheets read/write + a Settings key/value tab
     calendar.py               Google Calendar reads
     fx.py                       currency conversion (NBU rates)
-    stats.py                      aggregation + chart rendering
+    stats.py                      aggregation, trend comparison, chart rendering
     recurring.py                    subscription/recurring-charge detection
-    advice.py                         ties stats + recurring + nlp into the digest
+    budget.py                         live budget + real-time threshold alerts
+    advice.py                           ties stats + recurring + nlp into the digest
 scripts/
   google_oauth_setup.py    run once, locally, to authorize Calendar access
 tests/                       pytest — parsing validation, stats math, security, storage
@@ -247,11 +279,16 @@ tradeoff — it's slower than a real DB and not built for huge datasets — is
 a non-issue at personal-finance-tracker scale (thousands of rows, not
 millions).
 
-**Why no budget-tracking database or accounts system?** You said no fixed
-budget yet, and a single optional env var (`MONTHLY_BUDGET`) covers "give me
-a number to compare against" without needing UI, storage, or multi-user
-logic for something that isn't being used. Easy to promote to a real
-`/setbudget` command later if you want to change it without redeploying.
+**Why is the budget stored in a Sheet tab instead of a real database?** It
+needs to be adjustable at runtime (`/setbudget`) without a redeploy, but this
+is still a single-user bot with no other reason to run a database — reusing
+the Sheet you already have (a tiny "Settings" tab, same access pattern as the
+ledger) gets live-editable state without adding new infrastructure.
+
+**Why alert at 80%/100% specifically, and only once each?** Those are the two
+moments that are actually decision-relevant — "you should slow down" and
+"you're over" — and re-alerting on every transaction past 100% would just be
+noise you'd start ignoring. It resets automatically each calendar month.
 
 **Why is there no bank/card integration?** Not requested, and it's a
 fundamentally different trust and security category (linking real
@@ -287,6 +324,8 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-29 tests cover transaction validation, the formula-injection fix, stats
-aggregation, recurring-charge detection, the rate limiter, and the pending-
-confirmation store.
+45 tests cover transaction validation, the formula-injection fix, stats
+aggregation and trend comparison, recurring-charge detection, the budget
+alert state machine, keyboard/button correctness (including Telegram's
+64-byte callback-data limit), the rate limiter, and the pending-confirmation
+store.

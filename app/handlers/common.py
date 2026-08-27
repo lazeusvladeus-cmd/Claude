@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from aiogram.enums import ChatAction
 from aiogram.types import Message
 
 from app.formatting import format_parsed_transaction
@@ -23,6 +24,7 @@ async def handle_transcript(message: Message, text: str, source: str, status: Me
     """
     if status is None:
         status = await message.answer("🧠 Parsing…")
+    await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
     try:
         parsed = await parse_transaction(text)

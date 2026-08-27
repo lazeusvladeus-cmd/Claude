@@ -9,9 +9,11 @@ from aiogram.types import CallbackQuery
 
 from app.formatting import format_parsed_transaction
 from app.keyboards import category_picker_kb, confirm_transaction_kb, undo_kb
-from app.models import Transaction
+from app.models import Direction, Transaction
 from app.pending_store import flip_direction, get, pop, update_category
-from app.services.sheets import SheetsError, append_transaction, delete_last_transaction
+from app.services import budget
+from app.services.sheets import SheetsError, append_transaction, delete_last_transaction, get_all_transactions
+from app.services.stats import compute_period_stats, month_key, start_of_this_month
 
 logger = logging.getLogger(__name__)
 router = Router(name="callbacks")
@@ -54,6 +56,26 @@ async def confirm_transaction(cq: CallbackQuery) -> None:
     await cq.message.edit_text(f"✅ Saved!\n\n{format_parsed_transaction(entry.parsed)}", reply_markup=undo_kb(tx.id))
     await cq.answer("Saved")
 
+    if tx.direction == Direction.EXPENSE:
+        await _maybe_send_budget_alert(cq)
+
+
+async def _maybe_send_budget_alert(cq: CallbackQuery) -> None:
+    """Fires right after a save, so overspending is caught the moment it happens
+    rather than buried in next week's digest. Best-effort: any failure here is
+    logged and swallowed — the transaction is already safely saved either way."""
+    try:
+        target = await budget.get_effective_budget()
+        if not target:
+            return
+        transactions = await get_all_transactions()
+        stats = await compute_period_stats(transactions, since=start_of_this_month())
+        alert = budget.check_threshold_alert(month_key(), stats.total_spent / target)
+        if alert:
+            await cq.message.answer(alert)
+    except Exception:
+        logger.exception("Budget alert check failed (non-fatal)")
+
 
 @router.callback_query(F.data.startswith("tx:editcat:"))
 async def show_category_picker(cq: CallbackQuery) -> None:
@@ -62,7 +84,8 @@ async def show_category_picker(cq: CallbackQuery) -> None:
     if entry is None:
         await cq.answer("This entry has expired. Please send it again.", show_alert=True)
         return
-    await cq.message.edit_reply_markup(reply_markup=category_picker_kb(pending_id))
+    kb = category_picker_kb(pending_id, current_category=entry.parsed.category)
+    await cq.message.edit_reply_markup(reply_markup=kb)
     await cq.answer()
 
 
