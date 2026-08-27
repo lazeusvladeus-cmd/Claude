@@ -1,0 +1,9 @@
+services:
+  finance-bot:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Read-write: the Calendar OAuth token file is refreshed and rewritten in place.
+      - ./secrets:/app/secrets
