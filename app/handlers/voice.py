@@ -3,6 +3,7 @@ since this is what a Back Tap Shortcut and manual voice messages both produce.""
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from aiogram import F, Router
 from aiogram.enums import ChatAction
@@ -38,8 +39,15 @@ async def on_voice_message(message: Message) -> None:
         await status.edit_text("⚠️ Couldn't download that voice message from Telegram. Please try again.")
         return
 
+    # Real Telegram voice notes are always OGG/Opus, but F.audio uploads (e.g. an .m4a
+    # sent by a Shortcuts automation) can be any format — a mismatched filename extension
+    # can make Whisper misdecode the file, so derive it from what Telegram actually stored
+    # rather than hardcoding "voice.ogg" for every case.
+    suffix = Path(tg_file.file_path or "").suffix or ".ogg"
+    filename = f"audio{suffix}"
+
     try:
-        text = await transcribe_voice(audio_bytes, filename="voice.ogg")
+        text = await transcribe_voice(audio_bytes, filename=filename)
     except TranscriptionError as exc:
         await status.edit_text(f"❓ {exc}")
         return
