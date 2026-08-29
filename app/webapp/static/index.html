@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Finance Dashboard</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #f2f2f7);
+    --bg-secondary: var(--tg-theme-secondary-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #111114);
+    --hint: var(--tg-theme-hint-color, #8e8e93);
+    --link: var(--tg-theme-link-color, #007aff);
+    --button: var(--tg-theme-button-color, #007aff);
+    --button-text: var(--tg-theme-button-text-color, #ffffff);
+    --border: color-mix(in srgb, var(--hint) 25%, transparent);
+    --danger: #ff3b30;
+    --warn: #ff9500;
+    --good: #34c759;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    padding-bottom: 32px;
+  }
+
+  .container { padding: 12px 16px 4px; }
+
+  h1 { font-size: 22px; margin: 8px 0 16px; }
+
+  .card {
+    background: var(--bg-secondary);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--hint);
+    margin: 0 0 10px;
+  }
+
+  .big-number { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .sub-line { color: var(--hint); font-size: 13px; margin-top: 4px; }
+  .trend { font-size: 13px; margin-top: 6px; }
+  .trend.up { color: var(--danger); }
+  .trend.down { color: var(--good); }
+  .trend.flat { color: var(--hint); }
+
+  .stat-row { display: flex; gap: 12px; }
+  .stat-row .card { flex: 1; }
+
+  .progress-track {
+    height: 10px;
+    border-radius: 6px;
+    background: var(--border);
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+  .progress-fill { height: 100%; border-radius: 6px; background: var(--good); transition: width 0.3s ease; }
+  .progress-fill.warn { background: var(--warn); }
+  .progress-fill.over { background: var(--danger); }
+
+  .budget-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--hint); }
+
+  .cat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 14px; }
+  .cat-row:last-child { margin-bottom: 0; }
+  .cat-label { flex: 0 0 132px; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 4px; }
+  .cat-amount { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: var(--hint); font-size: 13px; }
+
+  .tx-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tx-row:last-child { border-bottom: none; }
+  .tx-icon { font-size: 20px; flex: 0 0 auto; width: 28px; text-align: center; }
+  .tx-main { flex: 1; min-width: 0; }
+  .tx-desc { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tx-meta { color: var(--hint); font-size: 12px; margin-top: 1px; }
+  .tx-amount { flex: 0 0 auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tx-amount.income { color: var(--good); }
+  .tx-delete {
+    flex: 0 0 auto;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--border);
+    color: var(--hint);
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .tx-delete:active { background: var(--danger); color: #fff; }
+
+  .empty-state { text-align: center; color: var(--hint); padding: 24px 8px; font-size: 14px; }
+
+  .budget-form { display: flex; gap: 8px; margin-top: 4px; }
+  .budget-form input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+  }
+  .budget-form button, .edit-budget-btn {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    background: var(--button);
+    color: var(--button-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .edit-budget-btn { background: transparent; color: var(--link); padding: 0; font-weight: 500; }
+
+  .loading, .error-banner { text-align: center; padding: 40px 16px; color: var(--hint); }
+  .error-banner { color: var(--danger); }
+
+  .sheet-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: flex-end; z-index: 10;
+  }
+  .sheet-backdrop.open { display: flex; }
+  .sheet {
+    background: var(--bg-secondary);
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .sheet-title { font-weight: 600; font-size: 16px; margin-bottom: 12px; }
+  .sheet-option {
+    padding: 12px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .sheet-option:active { background: var(--border); }
+  .sheet-cancel { text-align: center; color: var(--link); padding: 12px 8px; margin-top: 4px; font-weight: 500; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="container" id="app">
+    <h1>💸 Finance Dashboard</h1>
+    <div class="loading" id="loading">Loading…</div>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop">
+    <div class="sheet" id="sheet"></div>
+  </div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+
+const CATEGORY_COLORS = [
+  "#34c759", "#ff9500", "#5ac8fa", "#af52de", "#ffcc00",
+  "#ff3b30", "#ff2d55", "#5856d6", "#007aff", "#64d2ff",
+  "#30b0c7", "#00c7be", "#ff6482", "#8e8e93",
+];
+
+let categoryColorMap = {};
+let currentSummary = null;
+
+function haptic(type) {
+  if (!tg || !tg.HapticFeedback) return;
+  if (type === "success" || type === "error" || type === "warning") {
+    tg.HapticFeedback.notificationOccurred(type);
+  } else {
+    tg.HapticFeedback.impactOccurred(type || "light");
+  }
+}
+
+async function api(path, options = {}) {
+  const initData = tg ? tg.initData : "";
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Telegram-Init-Data": initData,
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch (e) {}
+    throw new Error(detail);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+function fmt(amount, currency) {
+  return `${currency} ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function relativeTime(isoString) {
+  const then = new Date(isoString);
+  const diffMs = Date.now() - then.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return then.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function renderCategoryBars(byCategory, total) {
+  const entries = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    return `<div class="empty-state">No spending in this period yet.</div>`;
+  }
+  return entries.map(([cat, amount]) => {
+    const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+    const color = categoryColorMap[cat] || "#8e8e93";
+    const label = currentSummary.categories.find(c => c.value === cat);
+    return `
+      <div class="cat-row">
+        <div class="cat-label">${label ? label.label : cat}</div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="cat-amount">${pct}%</div>
+      </div>`;
+  }).join("");
+}
+
+function budgetBarClass(pct) {
+  if (pct >= 100) return "over";
+  if (pct >= 80) return "warn";
+  return "";
+}
+
+function renderBudgetCard(budget, currency) {
+  if (!budget) {
+    return `
+      <div class="card">
+        <p class="card-title">Monthly Budget</p>
+        <p class="sub-line">No budget set yet.</p>
+        <form class="budget-form" id="budgetForm">
+          <input type="number" inputmode="decimal" min="1" step="1" placeholder="e.g. 1000" id="budgetInput" required />
+          <button type="submit">Set</button>
+        </form>
+      </div>`;
+  }
+  const cls = budgetBarClass(budget.used_pct);
+  return `
+    <div class="card">
+      <p class="card-title">Monthly Budget</p>
+      <div class="progress-track"><div class="progress-fill ${cls}" style="width:${Math.min(budget.used_pct, 100)}%"></div></div>
+      <div class="budget-meta">
+        <span>${fmt(budget.spent, currency)} of ${fmt(budget.target, currency)}</span>
+        <span>${budget.used_pct}%</span>
+      </div>
+      <div style="margin-top:10px">
+        <span class="edit-budget-btn" id="editBudgetBtn">Change budget</span>
+      </div>
+    </div>`;
+}
+
+function renderTransactions(transactions) {
+  if (transactions.length === 0) {
+    return `<div class="empty-state">No transactions yet — send a voice note or text to the bot to log your first one.</div>`;
+  }
+  return transactions.map(t => {
+    const sign = t.direction === "income" ? "+" : "-";
+    const amountClass = t.direction === "income" ? "income" : "";
+    return `
+      <div class="tx-row" data-id="${t.id}" data-category="${t.category}">
+        <div class="tx-icon">${t.category_label.split(" ")[0]}</div>
+        <div class="tx-main" data-action="edit">
+          <div class="tx-desc">${escapeHtml(t.description)}</div>
+          <div class="tx-meta">${escapeHtml(t.category)} · ${relativeTime(t.timestamp)}</div>
+        </div>
+        <div class="tx-amount ${amountClass}">${sign}${fmt(t.amount, t.currency)}</div>
+        <button class="tx-delete" data-action="delete" aria-label="Delete">✕</button>
+      </div>`;
+  }).join("");
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function render(summary) {
+  currentSummary = summary;
+  categoryColorMap = {};
+  summary.categories.forEach((c, i) => { categoryColorMap[c.value] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
+
+  const trend = summary.month.trend;
+  let trendClass = "flat";
+  if (trend) {
+    if (trend.includes("📈")) trendClass = "up";
+    else if (trend.includes("📉")) trendClass = "down";
+  }
+
+  document.getElementById("app").innerHTML = `
+    <h1>💸 Finance Dashboard</h1>
+
+    <div class="stat-row">
+      <div class="card">
+        <p class="card-title">Last 7 Days</p>
+        <div class="big-number">${fmt(summary.week.total_spent, summary.base_currency)}</div>
+        <div class="sub-line">${summary.week.count} transaction${summary.week.count === 1 ? "" : "s"}</div>
+      </div>
+      <div class="card">
+        <p class="card-title">Last 30 Days</p>
+        <div class="big-number">${fmt(summary.month.total_spent, summary.base_currency)}</div>
+        ${trend ? `<div class="trend ${trendClass}">${trend}</div>` : ""}
+      </div>
+    </div>
+
+    ${renderBudgetCard(summary.budget, summary.base_currency)}
+
+    <div class="card">
+      <p class="card-title">Spending by Category (30 days)</p>
+      ${renderCategoryBars(summary.month.by_category, summary.month.total_spent)}
+    </div>
+
+    <div class="card">
+      <p class="card-title">Recent Transactions</p>
+      <div id="txList">${renderTransactions(summary.recent_transactions)}</div>
+    </div>
+  `;
+
+  wireUpEvents();
+}
+
+function wireUpEvents() {
+  const budgetForm = document.getElementById("budgetForm");
+  if (budgetForm) {
+    budgetForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("budgetInput");
+      const amount = parseFloat(input.value);
+      if (!amount || amount <= 0) return;
+      try {
+        await api("/api/budget", { method: "POST", body: JSON.stringify({ amount }) });
+        haptic("success");
+        await loadSummary();
+      } catch (err) {
+        haptic("error");
+        alert("Couldn't save budget: " + err.message);
+      }
+    });
+  }
+
+  const editBudgetBtn = document.getElementById("editBudgetBtn");
+  if (editBudgetBtn) {
+    editBudgetBtn.addEventListener("click", () => {
+      const amount = prompt("New monthly budget (" + currentSummary.base_currency + "):", currentSummary.budget.target);
+      if (!amount) return;
+      const parsed = parseFloat(amount);
+      if (!parsed || parsed <= 0) return;
+      api("/api/budget", { method: "POST", body: JSON.stringify({ amount: parsed }) })
+        .then(() => { haptic("success"); loadSummary(); })
+        .catch((err) => { haptic("error"); alert("Couldn't save budget: " + err.message); });
+    });
+  }
+
+  document.querySelectorAll(".tx-row").forEach((row) => {
+    const id = row.dataset.id;
+    row.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm("Delete this transaction?")) return;
+      try {
+        await api(`/api/transactions/${id}`, { method: "DELETE" });
+        haptic("success");
+        await loadSummary();
+      } catch (err) {
+        haptic("error");
+        alert("Couldn't delete: " + err.message);
+      }
+    });
+    row.querySelector('[data-action="edit"]').addEventListener("click", () => {
+      openCategorySheet(id, row.dataset.category);
+    });
+  });
+}
+
+function openCategorySheet(txId, currentCategory) {
+  const sheet = document.getElementById("sheet");
+  const options = currentSummary.categories.map(c => `
+    <div class="sheet-option" data-value="${c.value}" style="${c.value === currentCategory ? 'font-weight:700' : ''}">
+      ${c.value === currentCategory ? "✓ " : ""}${c.label}
+    </div>`).join("");
+  sheet.innerHTML = `
+    <div class="sheet-title">Change category</div>
+    ${options}
+    <div class="sheet-cancel" id="sheetCancel">Cancel</div>
+  `;
+  document.getElementById("sheetBackdrop").classList.add("open");
+
+  sheet.querySelectorAll(".sheet-option").forEach((opt) => {
+    opt.addEventListener("click", async () => {
+      const category = opt.dataset.value;
+      closeSheet();
+      try {
+        await api(`/api/transactions/${txId}/category`, { method: "PATCH", body: JSON.stringify({ category }) });
+        haptic("success");
+        await loadSummary();
+      } catch (err) {
+        haptic("error");
+        alert("Couldn't update category: " + err.message);
+      }
+    });
+  });
+  document.getElementById("sheetCancel").addEventListener("click", closeSheet);
+}
+
+function closeSheet() {
+  document.getElementById("sheetBackdrop").classList.remove("open");
+}
+document.getElementById("sheetBackdrop").addEventListener("click", (e) => {
+  if (e.target.id === "sheetBackdrop") closeSheet();
+});
+
+async function loadSummary() {
+  try {
+    const summary = await api("/api/summary");
+    render(summary);
+  } catch (err) {
+    document.getElementById("app").innerHTML = `
+      <h1>💸 Finance Dashboard</h1>
+      <div class="error-banner">Couldn't load your data.<br>${escapeHtml(err.message)}</div>`;
+  }
+}
+
+loadSummary();
+if (tg) {
+  tg.onEvent("themeChanged", () => {});
+}
+</script>
+</body>
+</html>

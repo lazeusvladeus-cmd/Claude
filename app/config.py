@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # Google (shared OAuth for both Sheets and Calendar)
     google_oauth_client_file: str = "./secrets/oauth_client.json"
-    google_token_file: str = "./secrets/calendar_token.json"
+    google_token_file: str = "./secrets/google_token.json"
     google_calendar_id: str = "primary"
     calendar_reminder_minutes_before: int = 20
 
@@ -45,6 +45,29 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Kyiv"
     rate_limit_per_minute: int = 15
     log_level: str = "INFO"
+
+    # Mini App dashboard (optional — the bot works fine without it)
+    # The public HTTPS URL this bot is deployed at, e.g. https://your-app.up.railway.app.
+    # Needed to show the "Open Dashboard" button; leave blank to skip it (and running the
+    # dashboard locally, since Telegram requires Mini Apps to be served over real HTTPS).
+    miniapp_url: str | None = None
+    # Local port the dashboard's web server binds to. Railway (and most PaaS hosts) inject
+    # PORT automatically, which this picks up with zero extra config.
+    port: int = 8080
+
+    @field_validator("miniapp_url", mode="before")
+    @classmethod
+    def _blank_miniapp_url_is_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    @field_validator("miniapp_url")
+    @classmethod
+    def _miniapp_url_must_be_https(cls, v: str | None) -> str | None:
+        if v is not None and not v.startswith("https://"):
+            raise ValueError("MINIAPP_URL must start with https:// — Telegram requires Mini Apps to use HTTPS.")
+        return v.rstrip("/") if v else v
 
     @field_validator("allowed_telegram_user_ids")
     @classmethod

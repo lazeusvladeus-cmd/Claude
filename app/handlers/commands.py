@@ -20,6 +20,7 @@ from app.keyboards import (
     QUICK_SHEET,
     QUICK_STATS,
     QUICK_TODAY,
+    dashboard_kb,
     main_menu_kb,
     undo_kb,
 )
@@ -54,6 +55,7 @@ _HELP_TEXT = """👋 <b>Here's what I can do:</b>
 /setbudget &lt;amount&gt; — set or change your monthly budget
 /undo — remove the most recent transaction
 /sheet — link to your Google Sheet ledger
+/dashboard — open the visual dashboard (if set up)
 /help — this message
 
 I'll also message you before calendar events, the moment you cross a budget threshold, and with a weekly savings digest.
@@ -63,6 +65,21 @@ I'll also message you before calendar events, the moment you cross a budget thre
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
     await message.answer(f"Welcome! 💸\n\n{_HELP_TEXT}", reply_markup=main_menu_kb())
+    kb = dashboard_kb()
+    if kb:
+        await message.answer("A visual dashboard is also available:", reply_markup=kb)
+
+
+@router.message(Command("dashboard"))
+async def cmd_dashboard(message: Message) -> None:
+    kb = dashboard_kb()
+    if not kb:
+        await message.answer(
+            "The dashboard isn't set up yet — it needs MINIAPP_URL configured "
+            "(see README) once this bot is deployed somewhere with a public HTTPS URL."
+        )
+        return
+    await message.answer("📈 Your finance dashboard:", reply_markup=kb)
 
 
 @router.message(Command("help"))

@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    ports:
+      - "8080:8080"  # the dashboard's web server; match this if you change PORT
     volumes:
       # Read-write: the Calendar OAuth token file is refreshed and rewritten in place.
       - ./secrets:/app/secrets

@@ -33,6 +33,11 @@ a hard allowlist, no accounts, no multi-tenant anything.
 - 🧭 **No commands to memorize.** A persistent quick-action keyboard (Stats /
   Advice / Today / Sheet / Help) sits right above the keyboard, and every
   command shows up with a description in Telegram's native `/` menu.
+- 📈 **A visual dashboard (optional).** `/dashboard` opens a Telegram Mini
+  App — a real themed web page (matches your light/dark mode) with a budget
+  progress bar, category breakdown, and a transaction list where you can
+  delete or re-categorize entries with a tap. Chat buttons can't be
+  custom-styled; this is the one place in the app that can be.
 
 ## Architecture, in one paragraph
 
@@ -47,8 +52,11 @@ scheduler (APScheduler, same process) polls Google Calendar every minute for
 upcoming events and fires reminders, and sends a weekly digest built from
 your Sheet data plus an LLM call.
 
-No database beyond the Sheet itself, no web server, no separate worker
-process — one container, one process, restart-safe.
+No database beyond the Sheet itself, no separate worker process — one
+container, one process. That one process now also serves a small FastAPI
+app (the Mini App dashboard, `app/webapp/`) alongside the bot's Telegram
+polling, running concurrently in the same event loop; still restart-safe,
+still nothing to deploy separately.
 
 ---
 
@@ -177,6 +185,9 @@ maintain):
    first deploy.
 5. Deploy. Check the logs for `Bot starting. Allowed users: {...}` — that
    confirms it booted and loaded your allowlist correctly.
+6. If you want the Mini App dashboard (see step 7 below), go to the
+   service's "Settings" → "Networking" and click "Generate Domain" to get a
+   public `https://...up.railway.app` URL — that's the URL for `MINIAPP_URL`.
 
 (Any other Docker-friendly host — Fly.io, Render, a VPS with
 `docker compose up -d` — works the same way: build the image, set the env
@@ -200,7 +211,35 @@ you'd need are just:
 
 Ask any time if you'd like the actual step-by-step Shortcut built out later.
 
-### 7. Sharing this with friends
+### 7. The Mini App dashboard (optional)
+
+Skip this section entirely if you're happy with the chat-only experience —
+nothing else in the bot depends on it. This is what turns `/dashboard` from
+"not set up yet" into a real page.
+
+Telegram requires Mini Apps to be served over genuine HTTPS, so this only
+works once you've deployed somewhere with a public URL (step 5 above) —
+it can't run purely on your own PC.
+
+1. Deploy the bot (see step 5) and note its public URL, e.g.
+   `https://your-app.up.railway.app`.
+2. Add it to `.env`:
+   ```
+   MINIAPP_URL=https://your-app.up.railway.app
+   ```
+   Redeploy/restart so the bot picks it up. `/start` and `/dashboard` will
+   now show an "Open Dashboard" button.
+3. **Nicer, optional step** — put the dashboard behind Telegram's native
+   menu button (the icon next to the message box, instead of a chat
+   button): message [@BotFather](https://t.me/BotFather) → `/mybots` → pick
+   your bot → "Bot Settings" → "Menu Button" → "Configure Menu Button" →
+   paste the same URL, give it a short title like "Dashboard".
+
+That's it — no separate hosting, no separate build step. The dashboard is
+plain HTML/CSS/JS (`app/webapp/static/index.html`, no framework, no npm)
+served by the same process as the bot.
+
+### 8. Sharing this with friends
 
 Do this, **not** adding their Telegram IDs to your own bot — an important
 distinction. This bot is deliberately single-owner: `ALLOWED_TELEGRAM_USER_IDS`
@@ -231,6 +270,7 @@ repo's link plus this README — everything they need is here.
 | `/setbudget <amount>` | Set or change your monthly budget, live |
 | `/undo` | Remove the most recent transaction |
 | `/sheet` | Link to your Google Sheet ledger |
+| `/dashboard` | Open the visual Mini App dashboard (once `MINIAPP_URL` is set) |
 | `/help` | Command list, inside the bot |
 
 All of the above (except `/setbudget`, `/undo` and `/month`, kept off the
@@ -264,9 +304,13 @@ app/
     recurring.py                      subscription/recurring-charge detection
     budget.py                           live budget + real-time threshold alerts
     advice.py                             ties stats + recurring + nlp into the digest
+  webapp/
+    auth.py               Telegram Mini App initData verification (HMAC)
+    server.py               FastAPI app: /api/summary, budget, delete/recategorize
+    static/index.html         the dashboard itself — plain HTML/CSS/JS, no build step
 scripts/
   google_oauth_setup.py    run once, locally, to authorize Sheets + Calendar access
-tests/                       pytest — parsing validation, stats math, security, storage
+tests/                       pytest — parsing, stats math, security, storage, webapp auth/API
 ```
 
 ## Design decisions worth knowing about
@@ -294,6 +338,13 @@ moments that are actually decision-relevant — "you should slow down" and
 "you're over" — and re-alerting on every transaction past 100% would just be
 noise you'd start ignoring. It resets automatically each calendar month.
 
+**Why a Mini App and not just prettier chat messages?** Telegram renders
+every button and message itself — the bot has zero control over button
+colors or sizing no matter how the text is formatted. A Mini App is the one
+part of Telegram that's a real web page, so it's the only way to get an
+actual themed UI (progress bars, a real transaction list, tap-to-edit)
+instead of emoji and monospace text pretending to be one.
+
 **Why is there no bank/card integration?** Not requested, and it's a
 fundamentally different trust and security category (linking real
 financial-account credentials) than "transcribe what I say I spent." If you
@@ -320,6 +371,13 @@ what access it needs.
 - **Undo is scoped.** `/undo` only ever removes the single most recent row,
   and only if its ID still matches what you were shown — it can't be used to
   delete arbitrary history.
+- **The dashboard verifies every request.** Telegram signs a payload
+  (`initData`) with your bot token every time the Mini App opens; every
+  dashboard API call is checked against that signature *and* the same
+  `ALLOWED_TELEGRAM_USER_IDS` allowlist the bot itself uses — there's no
+  side door around it. The static page itself is served publicly (it's just
+  HTML/JS, nothing sensitive), but every endpoint that touches your actual
+  data rejects anything without a valid, freshly-signed, authorized request.
 
 ## Running tests
 
@@ -328,8 +386,10 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-45 tests cover transaction validation, the formula-injection fix, stats
+75 tests cover transaction validation, the formula-injection fix, stats
 aggregation and trend comparison, recurring-charge detection, the budget
 alert state machine, keyboard/button correctness (including Telegram's
-64-byte callback-data limit), the rate limiter, and the pending-confirmation
-store.
+64-byte callback-data limit), the rate limiter, the pending-confirmation
+store, and the Mini App's initData signature verification and API endpoints
+(auth required, wrong signature rejected, unauthorized users rejected,
+stale sessions rejected).

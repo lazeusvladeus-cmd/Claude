@@ -2,8 +2,9 @@
 never auto-saved from an AI guess — see handlers/callbacks.py."""
 from __future__ import annotations
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
+from app.config import settings
 from app.models import CATEGORIES, category_label
 
 # Button labels for the persistent quick-action menu (bottom reply keyboard). Defined
@@ -59,6 +60,18 @@ def category_picker_kb(pending_id: str, current_category: str | None = None) -> 
         rows.append(row)
     rows.append([InlineKeyboardButton(text="« Back", callback_data=f"tx:back:{pending_id}")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def dashboard_kb() -> InlineKeyboardMarkup | None:
+    """Button that opens the Mini App dashboard, or None if MINIAPP_URL isn't
+    configured (the bot works fine without it — this is purely additive)."""
+    if not settings.miniapp_url:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📈 Open Dashboard", web_app=WebAppInfo(url=settings.miniapp_url))]
+        ]
+    )
 
 
 def undo_kb(tx_id: str) -> InlineKeyboardMarkup:

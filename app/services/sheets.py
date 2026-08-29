@@ -53,7 +53,7 @@ def _open_spreadsheet_sync() -> gspread.Spreadsheet:
     except gspread.exceptions.APIError as exc:
         raise SheetsError(
             "Could not open the configured Google Sheet. Double-check GOOGLE_SHEET_ID and that "
-            "the sheet is shared with the service account's client_email as an Editor."
+            "it's a sheet owned by (or shared as Editor with) the Google account you authorized."
         ) from exc
 
 
@@ -114,6 +114,34 @@ async def delete_last_transaction(user_confirmation_id: str) -> bool:
         ws = await _worksheet()
         await asyncio.to_thread(ws.delete_rows, last_row_index)
         return True
+
+
+async def delete_transaction(tx_id: str) -> bool:
+    """Delete any transaction by id, wherever it is in the sheet — not restricted to the
+    last row like delete_last_transaction. Used by the Mini App's transaction list, where
+    the user is explicitly tapping a specific row's delete button (an intentional action,
+    unlike /undo which needs the "still the last one" safety check against stale taps)."""
+    async with _lock:
+        all_values = await _get_all_values()
+        for i, row in enumerate(all_values[1:], start=2):  # 1-indexed, +1 for header
+            if row and row[0] == tx_id:
+                ws = await _worksheet()
+                await asyncio.to_thread(ws.delete_rows, i)
+                return True
+        return False
+
+
+async def update_transaction_category(tx_id: str, category: str) -> bool:
+    """Change the category of an existing transaction by id. Used by the Mini App."""
+    category_col = Transaction.header_row().index("category") + 1  # gspread columns are 1-indexed
+    async with _lock:
+        all_values = await _get_all_values()
+        for i, row in enumerate(all_values[1:], start=2):
+            if row and row[0] == tx_id:
+                ws = await _worksheet()
+                await asyncio.to_thread(ws.update_cell, i, category_col, category)
+                return True
+        return False
 
 
 async def get_last_transaction() -> Transaction | None:
