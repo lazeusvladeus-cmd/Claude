@@ -1,5 +1,7 @@
-"""Run this ONCE, locally (not on the server), to authorize the bot's read-only
-access to your Google Calendar and mint a long-lived refresh token.
+"""Run this ONCE, locally (not on the server), to authorize the bot's access to
+your Google Sheets and Calendar (read-only) with your own Google login — one
+authorization covers both, so there's no service-account key file involved
+(Google blocks creating those by default on many accounts/organizations).
 
 Usage:
     python scripts/google_oauth_setup.py
@@ -18,15 +20,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from google_auth_oauthlib.flow import InstalledAppFlow  # noqa: E402
 
 from app.config import settings  # noqa: E402
-
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+from app.services.google_oauth import SCOPES  # noqa: E402
 
 
 def main() -> None:
     client_file = Path(settings.google_oauth_client_file)
     if not client_file.exists():
         print(f"ERROR: OAuth client file not found at {client_file}.")
-        print("Create one in Google Cloud Console (see README 'Google Calendar setup') and save it there.")
+        print("Create one in Google Cloud Console (see README 'Google Cloud project setup') and save it there.")
         raise SystemExit(1)
 
     flow = InstalledAppFlow.from_client_secrets_file(str(client_file), SCOPES)
@@ -38,6 +39,7 @@ def main() -> None:
 
     print(f"\nDone! Token saved to {token_file}.")
     print("Copy this file to your deployment's secrets/ directory (keep it private — it's a live credential).")
+    print("This one file now covers both Google Sheets and Google Calendar access.")
 
 
 if __name__ == "__main__":

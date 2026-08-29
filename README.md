@@ -42,7 +42,7 @@ middleware that hard-rejects anyone whose Telegram user ID isn't yours.
 Voice notes go through OpenAI Whisper for transcription; the resulting text
 (or anything you type) goes through a GPT call that extracts a structured
 transaction as JSON. You confirm via inline buttons, and only then does it
-get appended to a Google Sheet (via a service account). A background
+get appended to a Google Sheet (via your own Google OAuth login). A background
 scheduler (APScheduler, same process) polls Google Calendar every minute for
 upcoming events and fires reminders, and sends a weekly digest built from
 your Sheet data plus an LLM call.
@@ -85,29 +85,16 @@ guessing or fake values, so nothing was skipped or stubbed out.
 
 ### 3. Google Cloud project (Sheets + Calendar)
 
+This uses **your own Google login** for both Sheets and Calendar (one
+authorization covers both) — not a service-account key file. Google now
+blocks service-account key creation by default on most new projects
+(`iam.disableServiceAccountKeyCreation`), and honestly this way is simpler
+anyway: no key file, and no "share the sheet with a robot email" step.
+
 1. Go to https://console.cloud.google.com/ → create a new project (any name).
 2. **Enable APIs**: in "APIs & Services" → "Library", enable both
    **Google Sheets API** and **Google Calendar API**.
-3. **Service account (for Sheets)**:
-   - "APIs & Services" → "Credentials" → "Create Credentials" → "Service
-     account". Any name is fine. No roles needed at the project level.
-   - Open the created service account → "Keys" → "Add Key" → "Create new
-     key" → JSON. This downloads a JSON file.
-   - Save it as `secrets/service_account.json` in this project.
-   - Note the service account's email (looks like
-     `something@your-project.iam.gserviceaccount.com`) — you'll need it next.
-4. **The spreadsheet**:
-   - Create a new blank Google Sheet at https://sheets.new.
-   - Share it (top-right "Share" button) with the service account's email
-     from above, as **Editor**.
-   - Copy the sheet ID from its URL:
-     `https://docs.google.com/spreadsheets/d/`**`THIS_PART`**`/edit`
-   - `GOOGLE_SHEET_ID=THIS_PART` in `.env`.
-   - The bot creates a "Transactions" tab with headers automatically the
-     first time it runs — you don't need to set up columns yourself.
-5. **OAuth client (for Calendar)** — this one's separate because a service
-   account has no access to your personal calendar unless you share it, and
-   sharing a whole calendar is more than this needs:
+3. **OAuth client**:
    - "APIs & Services" → "Credentials" → "Create Credentials" → "OAuth
      client ID".
    - If prompted, configure the OAuth consent screen first: choose
@@ -116,7 +103,15 @@ guessing or fake values, so nothing was skipped or stubbed out.
      mode — you're the only user.
    - Application type: **Desktop app**. Create it, then download the JSON.
    - Save it as `secrets/oauth_client.json`.
-6. **Run the one-time authorization script** — locally, on a machine with a
+4. **The spreadsheet**:
+   - Create a new blank Google Sheet at https://sheets.new, in your own
+     Google account — nothing to share, you already own it.
+   - Copy the sheet ID from its URL:
+     `https://docs.google.com/spreadsheets/d/`**`THIS_PART`**`/edit`
+   - `GOOGLE_SHEET_ID=THIS_PART` in `.env`.
+   - The bot creates "Transactions" and "Settings" tabs automatically the
+     first time it runs — you don't need to set up columns yourself.
+5. **Run the one-time authorization script** — locally, on a machine with a
    browser (not on a headless server):
    ```bash
    python -m venv .venv && source .venv/bin/activate
@@ -124,10 +119,18 @@ guessing or fake values, so nothing was skipped or stubbed out.
    # fill in .env with everything above before this step
    python scripts/google_oauth_setup.py
    ```
-   This opens a browser, you sign in and approve, and it writes
-   `secrets/calendar_token.json`. Copy that file to wherever you deploy the
-   bot (see below) — it's what lets the bot read your calendar without you
-   re-authorizing every time.
+   This opens a browser, you sign in with the Google account that owns the
+   Sheet above and approve access, then writes `secrets/google_token.json`.
+   Copy that one file to wherever you deploy the bot (see below) — it's what
+   lets the bot read your Sheet and Calendar without you re-authorizing
+   every time.
+
+   **If you hit "Service account key creation is disabled" anywhere in this
+   process:** ignore it — that error is for the service-account path this
+   README no longer uses. If instead the *OAuth consent screen itself* is
+   blocked by an organization policy (rare, mostly on managed Workspace
+   accounts), the fix is to create the Cloud project under a personal
+   `@gmail.com` account rather than a work/school one.
 
 ### 4. Fill in the rest of `.env`
 
@@ -165,13 +168,13 @@ maintain):
    It detects the `Dockerfile` automatically.
 3. In the service's "Variables" tab, add every variable from your `.env`
    (Railway's UI lets you paste a whole `.env` file at once).
-4. For the two secret files (`service_account.json`, `oauth_client.json`,
-   `calendar_token.json`): Railway supports mounting them as files via
-   "Volumes", or simpler for three small JSON files — base64-encode each
-   and add a tiny startup step, or use Railway's raw file variables if
-   available in your plan. The straightforward path: add a "Volume" mounted
-   at `/app/secrets`, then use Railway's shell (or `railway run`) to copy
-   the three files in once after first deploy.
+4. For the two secret files (`oauth_client.json`, `google_token.json`):
+   Railway supports mounting them as files via "Volumes", or simpler for two
+   small JSON files — base64-encode each and add a tiny startup step, or use
+   Railway's raw file variables if available in your plan. The
+   straightforward path: add a "Volume" mounted at `/app/secrets`, then use
+   Railway's shell (or `railway run`) to copy the two files in once after
+   first deploy.
 5. Deploy. Check the logs for `Bot starting. Allowed users: {...}` — that
    confirms it booted and loaded your allowlist correctly.
 
@@ -253,15 +256,16 @@ app/
   services/
     transcription.py    OpenAI Whisper
     nlp.py                OpenAI GPT: text -> structured transaction, savings advice
-    sheets.py               Google Sheets read/write + a Settings key/value tab
-    calendar.py               Google Calendar reads
-    fx.py                       currency conversion (NBU rates)
-    stats.py                      aggregation, trend comparison, chart rendering
-    recurring.py                    subscription/recurring-charge detection
-    budget.py                         live budget + real-time threshold alerts
-    advice.py                           ties stats + recurring + nlp into the digest
+    google_oauth.py         shared OAuth credential loading (Sheets + Calendar)
+    sheets.py                 Google Sheets read/write + a Settings key/value tab
+    calendar.py                 Google Calendar reads
+    fx.py                         currency conversion (NBU rates)
+    stats.py                        aggregation, trend comparison, chart rendering
+    recurring.py                      subscription/recurring-charge detection
+    budget.py                           live budget + real-time threshold alerts
+    advice.py                             ties stats + recurring + nlp into the digest
 scripts/
-  google_oauth_setup.py    run once, locally, to authorize Calendar access
+  google_oauth_setup.py    run once, locally, to authorize Sheets + Calendar access
 tests/                       pytest — parsing validation, stats math, security, storage
 ```
 

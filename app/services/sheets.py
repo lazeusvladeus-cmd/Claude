@@ -1,5 +1,11 @@
 """Google Sheets as the transaction store.
 
+Authenticates with the same user-OAuth credentials as Calendar (see
+services/google_oauth.py) rather than a service-account key — Google now
+blocks service-account key creation by default on many accounts, and signing
+in as yourself means the Sheet just needs to be yours; no "share with a robot
+email" step.
+
 gspread is synchronous, so every call is pushed to a thread executor to avoid
 blocking the bot's event loop. All writes are append-only (we never edit/delete
 rows programmatically except the explicit "undo last" path), so the sheet stays
@@ -12,14 +18,13 @@ import logging
 from functools import lru_cache
 
 import gspread
-from google.oauth2.service_account import Credentials
 
 from app.config import settings
 from app.models import Transaction
+from app.services.google_oauth import GoogleAuthNotConfigured, load_credentials
 
 logger = logging.getLogger(__name__)
 
-_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 _TRANSACTIONS_SHEET = "Transactions"
 _SETTINGS_SHEET = "Settings"
 
@@ -36,13 +41,9 @@ class SheetsError(RuntimeError):
 @lru_cache(maxsize=1)
 def _client() -> gspread.Client:
     try:
-        creds = Credentials.from_service_account_file(settings.google_service_account_file, scopes=_SCOPES)
-    except (FileNotFoundError, ValueError) as exc:
-        raise SheetsError(
-            f"Couldn't load the Google service account file at "
-            f"'{settings.google_service_account_file}' (GOOGLE_SERVICE_ACCOUNT_FILE). "
-            "Check the path and that it's valid JSON — see README setup steps."
-        ) from exc
+        creds = load_credentials()
+    except GoogleAuthNotConfigured as exc:
+        raise SheetsError(str(exc)) from exc
     return gspread.authorize(creds)
 
 

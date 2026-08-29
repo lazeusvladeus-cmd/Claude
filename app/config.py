@@ -24,10 +24,9 @@ class Settings(BaseSettings):
     openai_text_model: str = "gpt-4o-mini"
 
     # Google Sheets
-    google_service_account_file: str = "./secrets/service_account.json"
     google_sheet_id: str
 
-    # Google Calendar
+    # Google (shared OAuth for both Sheets and Calendar)
     google_oauth_client_file: str = "./secrets/oauth_client.json"
     google_token_file: str = "./secrets/calendar_token.json"
     google_calendar_id: str = "primary"
@@ -84,7 +83,7 @@ class Settings(BaseSettings):
         return [c.strip().upper() for c in self.tracked_currencies.split(",") if c.strip()]
 
     def ensure_secret_dirs_exist(self) -> None:
-        for path_str in (self.google_service_account_file, self.google_oauth_client_file, self.google_token_file):
+        for path_str in (self.google_oauth_client_file, self.google_token_file):
             Path(path_str).parent.mkdir(parents=True, exist_ok=True)
 
 

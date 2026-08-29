@@ -1,8 +1,7 @@
 """Google Calendar reads, used to send a Telegram reminder before each event.
 
-Uses a user-OAuth refresh token (minted once via scripts/google_oauth_setup.py),
-since a service account has no access to a personal Google Calendar unless it's
-explicitly shared — a refresh token is the simpler one-time setup for personal use.
+Uses the shared user-OAuth credentials (see services/google_oauth.py) — the
+same one-time login that also authorizes Sheets access.
 """
 from __future__ import annotations
 
@@ -10,19 +9,16 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from app.config import settings
+from app.services.google_oauth import GoogleAuthNotConfigured, load_credentials
 
 logger = logging.getLogger(__name__)
-
-_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
 
 class CalendarNotConfigured(RuntimeError):
@@ -39,17 +35,10 @@ class CalendarEvent:
 
 
 def _load_credentials() -> Credentials:
-    token_path = Path(settings.google_token_file)
-    if not token_path.exists():
-        raise CalendarNotConfigured(
-            "Google Calendar isn't connected yet. Run scripts/google_oauth_setup.py once "
-            "to authorize it (see README)."
-        )
-    creds = Credentials.from_authorized_user_file(str(token_path), _SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        token_path.write_text(creds.to_json())
-    return creds
+    try:
+        return load_credentials()
+    except GoogleAuthNotConfigured as exc:
+        raise CalendarNotConfigured(str(exc)) from exc
 
 
 def _list_upcoming_events_sync(window_minutes: int) -> list[CalendarEvent]:
