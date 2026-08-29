@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "DTZ005",  # datetime.now() без tz навмисно використовується для локальних timestamp'ів у файлах/логах
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]

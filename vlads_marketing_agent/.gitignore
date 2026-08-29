@@ -1,0 +1,21 @@
+# Секрети та згенеровані облікові дані — НІКОЛИ не комітити.
+.env
+credentials.json
+token.json
+
+# Локальна база лідів та згенеровані артефакти.
+leads.db
+logs/
+presentations/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Тести/покриття
+.pytest_cache/
+.coverage
+htmlcov/

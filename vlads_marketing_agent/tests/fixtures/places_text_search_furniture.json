@@ -1,0 +1,18 @@
+{
+  "html_attributions": [],
+  "results": [
+    {
+      "business_status": "OPERATIONAL",
+      "formatted_address": "вул. Стрийська, 45, Львів, Львівська область, Україна, 79000",
+      "geometry": {
+        "location": {"lat": 49.8123, "lng": 24.0011}
+      },
+      "name": "TERRAHOME OUTDOOR, FURNITURE SHOWROOM",
+      "place_id": "ChIJ_test_terrahome_002",
+      "rating": 4.3,
+      "user_ratings_total": 58,
+      "types": ["furniture_store", "home_goods_store", "point_of_interest", "establishment"]
+    }
+  ],
+  "status": "OK"
+}

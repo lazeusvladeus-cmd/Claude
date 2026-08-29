@@ -1,0 +1,18 @@
+{
+  "html_attributions": [],
+  "results": [
+    {
+      "business_status": "OPERATIONAL",
+      "formatted_address": "вул. Городоцька, 200, Львів, Львівська область, Україна, 79000",
+      "geometry": {
+        "location": {"lat": 49.8302, "lng": 23.9750}
+      },
+      "name": "Салон краси Візаж",
+      "place_id": "ChIJ_test_vizazh_003",
+      "rating": 4.1,
+      "user_ratings_total": 12,
+      "types": ["beauty_salon", "point_of_interest", "establishment"]
+    }
+  ],
+  "status": "OK"
+}

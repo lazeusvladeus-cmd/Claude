@@ -1,0 +1,18 @@
+{
+  "html_attributions": [],
+  "results": [
+    {
+      "business_status": "OPERATIONAL",
+      "formatted_address": "вул. Личаківська, 1, Львів, Львівська область, Україна, 79000",
+      "geometry": {
+        "location": {"lat": 49.8397, "lng": 24.0297}
+      },
+      "name": "Кав'ярня Комаха",
+      "place_id": "ChIJ_test_cafe_komaha_001",
+      "rating": 4.7,
+      "user_ratings_total": 312,
+      "types": ["cafe", "restaurant", "food", "point_of_interest", "establishment"]
+    }
+  ],
+  "status": "OK"
+}

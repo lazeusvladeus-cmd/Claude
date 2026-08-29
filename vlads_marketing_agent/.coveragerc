@@ -1,0 +1,6 @@
+[run]
+omit =
+    .venv/*
+    tests/*
+    scripts/*
+    validate_setup.py
