@@ -931,14 +931,31 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function closeModal(){
     document.getElementById('modalOverlay').classList.remove('open');
   }
-  // No submission backend is wired up yet. Notifying via Telegram requires a
-  // server-side proxy (the bot token can't live in this page's JS without
-  // being publicly exposed) and a mailto: redirect was ruled out — so for
-  // now this just confirms receipt in the UI. Wire up a real endpoint
-  // (a serverless function, Formspree, Calendly, etc.) before launch, or
-  // leads submitted through this form are not actually captured anywhere.
+  // --- Telegram notification config ---
+  // The bot token/chat IDs are NOT hardcoded here (that would ship a live
+  // credential to every visitor's browser and into git history). Instead
+  // they're read from window.VIKE_TELEGRAM_CONFIG, defined in the untracked
+  // vike-config.js (see vike-config.example.js for the format — copy it to
+  // vike-config.js, fill in your real values, and load it via
+  // <script src="vike-config.js"></script> before this block). Missing
+  // config just means this silently does nothing; the form still works.
+  function notifyTelegram(name, contact){
+    var cfg = window.VIKE_TELEGRAM_CONFIG;
+    if(!cfg || !cfg.botToken || !cfg.chatIds || !cfg.chatIds.length) return;
+    var text = '🔔 New quote request\n\nName: ' + name + '\nEmail/phone: ' + contact;
+    cfg.chatIds.forEach(function(chatId){
+      var url = 'https://api.telegram.org/bot' + cfg.botToken + '/sendMessage'
+        + '?chat_id=' + encodeURIComponent(chatId)
+        + '&text=' + encodeURIComponent(text);
+      fetch(url).catch(function(){ /* fail silently — never blocks the form */ });
+    });
+  }
+
   function handleSubmit(e){
     e.preventDefault();
+    var name = document.getElementById('leadName').value;
+    var contact = document.getElementById('leadContact').value;
+    notifyTelegram(name, contact);
     document.getElementById('formState').style.display='none';
     document.getElementById('successState').style.display='block';
   }
@@ -946,6 +963,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if(e.key==='Escape') closeModal();
   });
 </script>
+<script src="vike-config.js"></script>
 
 </body>
 </html>
