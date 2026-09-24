@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vike Ads Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #3814FF; --secondary: #7E33FF; --grad: linear-gradient(135deg, #3814FF, #7E33FF);
+    --ink: #0D0A24; --muted: #6E6C82; --bg: #F5F4FB; --hair: #E1DFEC; --badge: #EEEBFF; --card: #fff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Archivo, system-ui, sans-serif; }
+  header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { font-weight: 800; font-size: 22px; margin: 0; }
+  h2 { font-weight: 800; font-size: 18px; margin: 0 0 12px; }
+  .label { font-family: "IBM Plex Mono", monospace; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+  .badge { font-family: "IBM Plex Mono", monospace; text-transform: uppercase; font-size: 11px; background: var(--badge); color: var(--primary); padding: 3px 8px; border-radius: 100px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; padding: 0 24px 40px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 0 16px 40px; } header { padding: 16px; } }
+  .card { background: var(--card); border: 1px solid var(--hair); border-radius: 16px; padding: 18px; }
+  .stack > * + * { margin-top: 16px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .mode { border: 1px solid var(--hair); background: #fff; border-radius: 100px; padding: 6px 14px; cursor: pointer; font: inherit; color: var(--ink); }
+  .mode.on { border-color: var(--primary); background: var(--badge); color: var(--primary); }
+  textarea, input, select { width: 100%; font: inherit; color: var(--ink); border: 1px solid var(--hair); border-radius: 12px; padding: 10px 12px; background: #fff; }
+  textarea { min-height: 72px; resize: vertical; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .row > label { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; }
+  .row input[type=number] { width: 70px; }
+  .btn { background: var(--grad); color: #fff; border: 0; border-radius: 100px; padding: 10px 20px; font: 600 15px Archivo, sans-serif; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .btn.ghost { background: #fff; color: var(--primary); border: 1px solid var(--hair); padding: 6px 14px; font-size: 13px; }
+  .part { border-top: 1px solid var(--hair); padding-top: 12px; margin-top: 12px; }
+  .part h3 { font: 800 15px Archivo, sans-serif; margin: 0 0 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .copybox { background: var(--bg); border: 1px solid var(--hair); border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; font-size: 14px; }
+  .field { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 8px; align-items: start; margin-bottom: 8px; }
+  .asset img { max-width: 100%; border-radius: 12px; border: 1px solid var(--hair); display: block; }
+  .muted { color: var(--muted); }
+  .notes { color: var(--muted); font-size: 13px; }
+  .error { color: #B00020; }
+  .md a { color: var(--primary); }
+  .md pre { background: var(--bg); padding: 10px; border-radius: 12px; white-space: pre-wrap; }
+  .lib-item { padding: 10px 0; border-top: 1px solid var(--hair); }
+  .lib-item:first-child { border-top: 0; }
+  .spinner { display: none; } .busy .spinner { display: inline; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vike Ads Studio</h1>
+  <div id="status" class="label"></div>
+</header>
+<main>
+  <section class="stack">
+    <div class="card">
+      <div class="modes" id="modes">
+        <button class="mode on" data-mode="ask">Ask anything</button>
+        <button class="mode" data-mode="idea">Ad idea</button>
+        <button class="mode" data-mode="research">Research</button>
+        <button class="mode" data-mode="image">Image only</button>
+      </div>
+      <textarea id="input" placeholder='e.g. "give me an ad idea for dental clinics in Lviv that boost posts"'></textarea>
+      <div class="row" id="ideaOpts" hidden>
+        <label>Variants <input type="number" id="variants" value="3" min="1" max="6"></label>
+        <label>Format <select id="format">
+          <option value="">Any</option><option value="dashboard">Dashboard</option>
+          <option value="review_card">Review card</option><option value="dm_screenshot">DM / iMessage</option>
+        </select></label>
+        <label><input type="checkbox" id="render" checked style="width:auto"> Render images</label>
+      </div>
+      <div class="row">
+        <button class="btn" id="go">Run</button>
+        <span class="muted spinner" id="spin">Working — agents can take a minute…</span>
+      </div>
+    </div>
+    <div id="out"></div>
+  </section>
+  <aside class="stack">
+    <div class="card">
+      <h2>Concept library</h2>
+      <div id="lib" class="muted">Loading…</div>
+    </div>
+    <div class="card">
+      <h2>Latest research</h2>
+      <button class="btn ghost" id="loadResearch">Show</button>
+    </div>
+  </aside>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+let mode = "ask", consentPhrase = "yes, real client with consent";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function md(src) {  // tiny, escape-first markdown renderer
+  const blocks = [];
+  let s = esc(src).replace(/```(?:text)?\n([\s\S]*?)```/g, (_, c) => (blocks.push(c), `\u0000${blocks.length-1}\u0000`));
+  s = s.replace(/^### (.*)$/gm, "<h3>$1</h3>").replace(/^## (.*)$/gm, "<h2>$1</h2>")
+       .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/_(.+?)_/g, "<i>$1</i>")
+       .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+       .replace(/^- (.*)$/gm, "• $1").replace(/\n/g, "<br>");
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<pre>${blocks[i]}</pre>`);
+}
+
+function copyBtn(text) {
+  const b = document.createElement("button");
+  b.className = "btn ghost"; b.textContent = "Copy";
+  b.onclick = () => navigator.clipboard.writeText(text).then(() => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1200); });
+  return b;
+}
+
+function field(label, value) {
+  const row = document.createElement("div"); row.className = "field";
+  row.innerHTML = `<span class="label">${esc(label)}</span><div class="copybox">${esc(value)}</div>`;
+  row.appendChild(copyBtn(value)); return row;
+}
+
+const FORMAT_LABEL = {dashboard: "Dashboard / Ads Manager screenshot", review_card: "Review card", dm_screenshot: "DM / iMessage screenshot"};
+
+function part4(v) {
+  const p = document.createElement("div"); p.className = "part asset";
+  p.innerHTML = `<h3>4. Generated image <span class="badge">${esc(FORMAT_LABEL[v.image_spec.format])}</span></h3>`;
+  if (v.image) {
+    p.insertAdjacentHTML("beforeend", `<a href="${v.image.url}" download><img src="${v.image.url}" alt="Generated ${esc(FORMAT_LABEL[v.image_spec.format])} asset"></a>
+      <div class="notes">${esc(v.image.backend)} · ${esc(v.image.model)}${v.image.qa_passed === false ? " · QA flagged: " + esc(v.image.qa_issues.join("; ")) : ""}</div>`);
+  } else {
+    p.insertAdjacentHTML("beforeend", `<div class="muted">Not rendered yet.</div>`);
+  }
+  const b = document.createElement("button"); b.className = "btn ghost"; b.textContent = v.image ? "Re-render image" : "Render image";
+  b.onclick = () => run("/api/image", {ref: v.id}); p.appendChild(b);
+  return p;
+}
+
+function variantCard(c, v, imageOnly) {
+  const card = document.createElement("div"); card.className = "card";
+  card.innerHTML = `<div class="label">${esc(v.id)}</div><h2>${esc(c.name)} — variant ${esc(v.label)}</h2>`;
+  if (!imageOnly) {
+    const p1 = document.createElement("div"); p1.className = "part";
+    p1.innerHTML = `<h3>1. The idea</h3><div>${esc(v.idea)}</div>`; card.appendChild(p1);
+
+    const onImage = v.on_image_text.headline + (v.on_image_text.subheadline ? "\n" + v.on_image_text.subheadline : "");
+    const p2 = document.createElement("div"); p2.className = "part";
+    p2.innerHTML = `<h3>2. On-image text</h3>`; p2.querySelector("h3").appendChild(copyBtn(onImage));
+    p2.insertAdjacentHTML("beforeend", `<div class="copybox">${esc(onImage)}</div>`); card.appendChild(p2);
+
+    const p3 = document.createElement("div"); p3.className = "part";
+    p3.innerHTML = `<h3>3. Meta Ads Manager fields</h3>`;
+    p3.appendChild(field("Primary text", v.meta.primary_text));
+    p3.appendChild(field("Headline", v.meta.headline));
+    if (v.meta.description) p3.appendChild(field("Description", v.meta.description));
+    p3.appendChild(field("Call to action", v.meta.cta));
+    card.appendChild(p3);
+  }
+  card.appendChild(part4(v));
+  return card;
+}
+
+async function askConsent(name) {
+  const typed = prompt(`Is "${name}" a real client who explicitly consented to a generated (non-literal) photo-realistic likeness?\n\nType exactly: ${consentPhrase}`);
+  if (!typed) return false;
+  const r = await fetch("/api/consent", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name, confirmation: typed})});
+  if (!r.ok) { alert((await r.json()).detail); return false; }
+  return true;
+}
+
+function show(data, body) {
+  const out = $("#out"); out.innerHTML = "";
+  if (data.kind === "concepts" || data.kind === "image") {
+    const wanted = data.kind === "image" ? new Set((data.markdown.match(/c-\d{8}-[0-9a-f]{4}-[A-Z]/g) || [])) : null;
+    for (const c of data.concepts) for (const v of c.variants)
+      if (!wanted || wanted.has(v.id)) out.appendChild(variantCard(c, v, data.kind === "image"));
+  } else {
+    const card = document.createElement("div"); card.className = "card md";
+    card.innerHTML = md(data.markdown); out.appendChild(card);
+  }
+  if (data.notes?.length) out.insertAdjacentHTML("beforeend", `<div class="notes card">${data.notes.map(esc).join("<br>")}</div>`);
+}
+
+async function run(url, body) {
+  $("#go").disabled = true; document.body.classList.add("busy");
+  try {
+    let r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    let data = await r.json();
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    if (data.kind === "question" && data.pending_name) {
+      if (await askConsent(data.pending_name)) return run(url, body);
+    }
+    show(data, body); loadLib();
+  } catch (e) {
+    $("#out").innerHTML = `<div class="card error">${esc(e.message)}</div>`;
+  } finally { $("#go").disabled = false; document.body.classList.remove("busy"); }
+}
+
+async function loadLib() {
+  const cs = await (await fetch("/api/concepts")).json();
+  const lib = $("#lib"); lib.innerHTML = cs.length ? "" : "No concepts yet.";
+  for (const c of cs) for (const v of c.variants) {
+    const it = document.createElement("div"); it.className = "lib-item";
+    it.innerHTML = `<div class="label">${esc(v.id)}</div><div>${esc(c.name)} — ${esc(FORMAT_LABEL[v.image_spec.format])}</div>`;
+    const open = document.createElement("button"); open.className = "btn ghost"; open.textContent = "Open";
+    open.onclick = () => show({kind: "concepts", concepts: [{...c, variants: [v]}], notes: []});
+    it.appendChild(open); lib.appendChild(it);
+  }
+}
+
+$("#modes").onclick = e => {
+  const b = e.target.closest(".mode"); if (!b) return;
+  document.querySelectorAll(".mode").forEach(x => x.classList.toggle("on", x === b));
+  mode = b.dataset.mode; $("#ideaOpts").hidden = mode !== "idea";
+  $("#input").placeholder = {ask: 'e.g. "give me an ad idea for dental clinics in Lviv"', idea: "Who/what is the ad for?",
+    research: "Topic (optional) — e.g. fake DM ads for agencies", image: "Concept or variant ID, e.g. c-20260924-ab12-B"}[mode];
+};
+$("#go").onclick = () => {
+  const text = $("#input").value.trim();
+  if (mode === "research") return run("/api/research", {topic: text});
+  if (!text) return;
+  if (mode === "ask") return run("/api/ask", {text});
+  if (mode === "image") return run("/api/image", {ref: text});
+  const f = $("#format").value;
+  run("/api/idea", {request: text, variants: +$("#variants").value || 3, formats: f ? [f] : null, render_images: $("#render").checked});
+};
+$("#loadResearch").onclick = async () => show({kind: "research", ...(await (await fetch("/api/research/latest")).json()), notes: []});
+fetch("/api/status").then(r => r.json()).then(s => {
+  consentPhrase = s.consent_phrase;
+  $("#status").textContent = Object.entries(s.integrations).map(([k, v]) => (v ? "● " : "○ ") + k).join("   ");
+});
+loadLib();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "_comment": "Shared brand context. Every agent loads this file. Edit freely; keep keys stable.",
+  "agency": {
+    "name": "Vike Marketing",
+    "what_we_do": "Meta and Google ads management (plus SEO and social) for small and mid-sized businesses",
+    "markets": ["Ukraine (Lviv, Kyiv)", "Ireland", "Netherlands"],
+    "offer_facts": [
+      "Three month-to-month plans: $200, $400 and $750 per month",
+      "No long-term contract, cancel any time",
+      "Free growth audit for prospects"
+    ],
+    "proof_points": [
+      "A Lviv preschool client got its first leads within a month of launching ads",
+      "An author client sold out her first book batch in 60 days",
+      "A Kyiv construction startup gets ongoing social media management"
+    ],
+    "real_client_names": ["Junior School", "Mary", "Alex"]
+  },
+  "colors": {
+    "primary_accent": "#3814FF",
+    "secondary_accent": "#7E33FF",
+    "button_gradient": "linear-gradient(135deg, #3814FF, #7E33FF)",
+    "ink": "#0D0A24",
+    "muted_body": "#6E6C82",
+    "light_background": "#F5F4FB",
+    "hairline_border": "#E1DFEC",
+    "badge_background": "#EEEBFF"
+  },
+  "typography": {
+    "headline": "Archivo, weight 800, sentence case, never all-caps, no italics or underlines",
+    "label": "IBM Plex Mono, uppercase, small, data tags only"
+  },
+  "components": {
+    "buttons": "full pill radius (100px), gradient fill",
+    "cards": "white, 16px radius, 1px hairline border"
+  }
+}

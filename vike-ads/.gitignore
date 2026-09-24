@@ -1,0 +1,6 @@
+data/
+.env
+references/**/*.png
+references/**/*.jpg
+references/**/*.jpeg
+references/**/*.webp
