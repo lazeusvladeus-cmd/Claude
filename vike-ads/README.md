@@ -85,6 +85,29 @@ python -m vike_ads doctor   # shows which integrations are live
 
 **Reference images:** save your three reference ads' assets as PNG/JPG in `references/dashboard/`, `references/review_card/` and `references/dm_screenshot/`. They are sent as *style references* only. They're gitignored, so client material never gets committed.
 
+## Hosting it (Render, about 10 minutes)
+
+The repo includes a Render Blueprint (`render.yaml` at the repo root) and a `vike-ads/Dockerfile`.
+
+1. Merge this branch into `main` first, or pick the branch when Render asks for one.
+2. Sign in at <https://dashboard.render.com>. Choose **New → Blueprint** and connect the `lazeusvladeus-cmd/Claude` repo.
+3. Render reads `render.yaml` and asks for each secret. Enter:
+   - `APP_PASSWORD`: the password your team types to sign in. Required: the server refuses to run publicly without one.
+   - `OPENAI_API_KEY`: required.
+   - `GEMINI_API_KEY`, `FAL_KEY`, `DEEPSEEK_API_KEY`: if Render won't accept a blank, delete that variable after the first deploy.
+4. Click **Apply**. You get a URL like `https://vike-ads-studio.onrender.com`. Open it and sign in.
+
+What it costs and why:
+- The service needs a **paid instance (Starter, about $7/month) because of the 1 GB persistent disk**. The disk keeps research, concepts, images and consent records across deploys. Without a disk, everything resets on each deploy.
+- The **weekly research refresh** runs inside the web service (`WEB_SCHEDULER=true`) every Monday at 08:00 Kyiv time.
+- Keys stay in Render's environment settings and never reach the browser. Every API call and image needs a signed login cookie, and failed logins are throttled.
+- Long runs happen as **background jobs** that the dashboard polls, so a 2–3 minute run doesn't hit a proxy timeout.
+
+To use another host instead (Railway, Fly.io, a VPS with Docker):
+1. Build `vike-ads/Dockerfile`.
+2. Mount a volume at `/var/data`.
+3. Set `APP_PASSWORD` plus your keys, and expose port 8765 (or set `PORT`).
+
 ## Usage
 
 ```bash
@@ -103,9 +126,10 @@ python -m vike_ads image c-20260924-ab12-A --photoreal "Mary"   # asks for conse
 python -m vike_ads list | show <id> | latest-research
 python -m vike_ads consent add "Mary" | consent list
 
-# dashboard (local only, no auth)
-python -m vike_ads serve                     # http://127.0.0.1:8765
+# dashboard
+python -m vike_ads serve                     # http://127.0.0.1:8765 (local, no login)
 python -m vike_ads serve --with-scheduler    # plus the weekly research refresh
+WEB_HOST=0.0.0.0 APP_PASSWORD=... python -m vike_ads serve   # reachable from other machines
 ```
 
 **Weekly research refresh:** run `python -m vike_ads schedule` as a long-running process. It runs every `WEEKLY_RESEARCH_DAY` at `WEEKLY_RESEARCH_HOUR` in your `TIMEZONE`. You can use cron instead:

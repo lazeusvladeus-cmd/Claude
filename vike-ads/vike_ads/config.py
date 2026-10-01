@@ -75,6 +75,9 @@ class Settings:
     # Web dashboard
     web_host: str = "127.0.0.1"
     web_port: int = 8765
+    app_password: str = ""  # required whenever the dashboard is reachable beyond localhost
+    app_secret: str = ""  # signs login cookies; random per process if unset
+    web_scheduler: bool = False  # run the weekly research refresh inside the web process
 
     @classmethod
     def from_env(cls, env_file: Path | None = None) -> "Settings":
@@ -111,7 +114,10 @@ class Settings:
             brand_file=Path(_env("VIKE_BRAND_FILE") or cls.brand_file),
             references_dir=Path(_env("VIKE_REFERENCES_DIR") or cls.references_dir),
             web_host=_env("WEB_HOST", cls.web_host),
-            web_port=_env_int("WEB_PORT", cls.web_port),
+            web_port=_env_int("WEB_PORT", 0) or _env_int("PORT", cls.web_port),
+            app_password=_env("APP_PASSWORD"),
+            app_secret=_env("APP_SECRET"),
+            web_scheduler=_env_bool("WEB_SCHEDULER", False),
         )
 
     def status(self) -> dict[str, bool]:

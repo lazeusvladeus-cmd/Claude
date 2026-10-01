@@ -16,6 +16,7 @@ from ..guardrails import ConsentRegistry, assert_identity_safe, enforce_identity
 from ..images.backends import ImageRouter, RefImage
 from ..images.prompts import build_prompt, expected_text
 from ..images.qa import ImageQA
+from ..progress import step
 from ..models import AdVariant, GeneratedImage, VisualFormat
 from ..store import Store
 
@@ -49,9 +50,11 @@ class ImageAgent:
 
         prompt, result, issues, passed = base_prompt, None, [], None
         for attempt in range(1, self.max_attempts + 1):
+            step(f"Rendering {variant.label or variant.id} · {spec.format.label}" + (f" (attempt {attempt})" if attempt > 1 else ""))
             result = self.router.generate(prompt, spec.aspect_ratio or "4:3", refs, prefer=prefer_backend)
             if self.qa is None:
                 break
+            step("Checking the image: spelling, no headline, no CTA, no gradient")
             passed, issues = self.qa.check(result.data, result.mime, spec, expected)
             if passed is not False:
                 break

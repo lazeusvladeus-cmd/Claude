@@ -13,6 +13,7 @@ from typing import Optional, Protocol
 import httpx
 
 from ..llm import LLMError, post_json
+from ..progress import step
 
 log = logging.getLogger(__name__)
 
@@ -158,6 +159,7 @@ class ImageRouter:
             if not b.available():
                 errors.append(f"{b.name}: not configured")
                 continue
+            step(f"Generating with {b.name}" + (" (fallback)" if errors else ""))
             try:
                 return b.generate(prompt, aspect_ratio, refs)
             except (ImageGenerationError, httpx.HTTPError, subprocess.CalledProcessError, FileNotFoundError) as e:

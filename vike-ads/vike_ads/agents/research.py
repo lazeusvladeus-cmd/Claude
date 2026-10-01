@@ -19,6 +19,7 @@ from typing import Callable, Optional
 
 from ..brand import Brand
 from ..llm import ChatClient, LLMError
+from ..progress import step
 from ..models import Finding, ResearchReport, Source, VisualFormat
 from ..search import MetaAdLibrary, WebSearch
 from ..store import new_id
@@ -87,14 +88,17 @@ class ResearchAgent:
     def gather(self, topic: str, themes: list[str], per_query: int = 4) -> tuple[list[Source], list[Source], list[str]]:
         notes: list[str] = []
         sources: list[Source] = []
+        queries = self._queries(topic, themes)
         if self.web is None:
             notes.append("No web search configured (set GOOGLE_CSE_* or OPENAI_API_KEY).")
         else:
+            step(f"Searching the web ({len(queries)} searches via {self.web.name.replace('_', ' ')})")
             with ThreadPoolExecutor(max_workers=4) as pool:
-                results = list(pool.map(lambda q: self._safe_search(q, per_query, notes), self._queries(topic, themes)))
+                results = list(pool.map(lambda q: self._safe_search(q, per_query, notes), queries))
             for batch in results:
                 sources.extend(batch)
         if self.ad_library is not None:
+            step("Searching the Meta Ad Library")
             for t in themes:
                 terms = TREND_THEMES[t]["ad_library_terms"]
                 try:
@@ -111,6 +115,7 @@ class ResearchAgent:
                 uniq[s.url] = s
         out = list(uniq.values())[:40]
         if self.fetcher:
+            step(f"Reading {min(len(out), 15)} source pages")
             with ThreadPoolExecutor(max_workers=6) as pool:
                 excerpts = list(pool.map(lambda s: self.fetcher(s.url) if s.kind == "web" else "", out[:15]))
             for s, ex in zip(out, excerpts):
@@ -158,11 +163,13 @@ class ResearchAgent:
         report = ResearchReport(id=new_id("r"), topic=topic or "Ad creative trends")
         sources, manual, notes = self.gather(topic, themes)
         report.sources, report.manual_links, report.notes = sources, manual, notes
+        step(f"Collected {len(sources)} sources")
         if not sources:
             report.notes.append("No sources gathered — nothing to synthesise.")
             return report
 
         if self.openai is not None:
+            step("Writing findings with OpenAI")
             try:
                 for f in self._synthesise(self.openai, topic, themes, sources):
                     f.verification, f.verification_note = "sourced", "grounded in cited sources"
@@ -171,12 +178,14 @@ class ResearchAgent:
                 report.notes.append(f"OpenAI synthesis failed: {e}")
 
         if self.deepseek is not None:
+            step("DeepSeek is writing a second set of findings")
             try:
                 ds_findings = self._synthesise(self.deepseek, topic, themes, sources)
             except LLMError as e:
                 report.notes.append(f"DeepSeek synthesis failed: {e}")
                 ds_findings = []
-            for f in ds_findings:
+            for n, f in enumerate(ds_findings, 1):
+                step(f"Cross-checking DeepSeek finding {n} of {len(ds_findings)}")
                 cited = [s for s in sources if s.id in f.source_ids]
                 verdict = self.checker.check(f"{f.trend}: {f.summary} {f.evidence}".strip(), cited)
                 if verdict.supported:

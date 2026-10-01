@@ -1,0 +1,945 @@
+<meta charset="utf-8">
+<title>Vike Ads Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a studio console. Fixed left rail (Studio / Library / Research / Setup), one working column.
+   Studio = composer -> live run log -> variant tabs, each variant shown as image (part 4) beside parts 1-3. */
+:root {
+  --bg: #F5F4FB; --surface: #FFFFFF; --sunken: #F5F4FB; --ink: #0D0A24; --muted: #6E6C82;
+  --hair: #E1DFEC; --badge: #EEEBFF; --accent: #3814FF; --accent-2: #7E33FF; --on-accent: #FFFFFF;
+  --grad: linear-gradient(135deg, #3814FF, #7E33FF);
+  --good: #0E7A4E; --good-bg: #E3F5EC; --warn: #9A5A00; --warn-bg: #FFF2DC; --bad: #B42318; --bad-bg: #FDECEA;
+  --shadow: 0 1px 2px rgba(13,10,36,.05), 0 8px 24px rgba(13,10,36,.06);
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r-card: 16px; --r-pill: 100px; --r-field: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D0B1A; --surface: #17142A; --sunken: #110E22; --ink: #F1EFFA; --muted: #A4A1BA;
+  --hair: #2B2745; --badge: #241D52; --accent: #9C8BFF; --accent-2: #B489FF;
+  --good: #5FD39C; --good-bg: #12301F; --warn: #F2B65A; --warn-bg: #33250B; --bad: #FF8A80; --bad-bg: #3A1513;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0D0B1A; --surface: #17142A; --sunken: #110E22; --ink: #F1EFFA; --muted: #A4A1BA;
+  --hair: #2B2745; --badge: #241D52; --accent: #9C8BFF; --accent-2: #B489FF;
+  --good: #5FD39C; --good-bg: #12301F; --warn: #F2B65A; --warn-bg: #33250B; --bad: #FF8A80; --bad-bg: #3A1513;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.75rem; line-height: 1.15; }
+h2 { font-size: 1.2rem; line-height: 1.25; }
+h3 { font-size: .95rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.label { font-family: var(--mono); text-transform: uppercase; font-size: .7rem; letter-spacing: .08em; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: .78rem; }
+.muted { color: var(--muted); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ---------- shell */
+.app { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh;
+  background: linear-gradient(to right, var(--surface) 235px, var(--hair) 235px, var(--hair) 236px, transparent 236px); }
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh; display: flex; flex-direction: column; gap: 24px;
+  padding: 24px 16px; border-right: 1px solid var(--hair); background: var(--surface); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--grad); display: grid; place-items: center; color: #fff; font: 800 15px var(--display); }
+.brand-name { font: 800 1rem/1.1 var(--display); }
+.brand-sub { display: block; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border: 0; border-radius: 10px;
+  background: none; cursor: pointer; color: var(--muted); font-weight: 600; }
+.nav button svg { width: 18px; height: 18px; flex: none; }
+.nav button:hover { background: var(--sunken); color: var(--ink); }
+.nav button[aria-current="page"] { background: var(--badge); color: var(--accent); }
+.nav .count { margin-left: auto; font-family: var(--mono); font-size: .7rem; }
+.rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 0 8px; }
+.conn { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.on { background: var(--good); } .dot.off { background: var(--warn); }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; text-decoration: underline; font-size: .82rem; text-align: left; }
+
+.main { min-width: 0; padding-block: 28px 64px; padding-inline: clamp(16px, 3.2vw, 44px); }
+.wrap { width: 100%; max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.view-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.view-head p { color: var(--muted); max-width: 62ch; margin-top: 4px; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; background: none; }
+  .rail { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; height: auto; flex-direction: row; align-items: center; gap: 8px;
+    padding: 10px 16px; border-right: 0; border-bottom: 1px solid var(--hair); overflow-x: auto; }
+  .brand-name, .brand-sub, .rail-foot, .nav .count { display: none; }
+  .brand { padding: 0; }
+  .nav { flex-direction: row; }
+  .nav button { padding: 8px 10px; white-space: nowrap; }
+  .nav button svg { display: none; }
+  .main { padding-block: 18px 48px; }
+}
+
+/* ---------- primitives */
+.card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-card); }
+.pad { padding: 20px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--r-pill); padding: 11px 22px;
+  background: var(--grad); color: var(--on-accent); font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .55; cursor: progress; }
+.btn.quiet { background: var(--surface); color: var(--accent); border: 1px solid var(--hair); padding: 7px 14px; font-size: .85rem; }
+.btn.quiet:hover { border-color: var(--accent); filter: none; }
+.btn.small { padding: 5px 12px; font-size: .8rem; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-pill); padding: 3px 10px; font: 500 .68rem var(--mono);
+  text-transform: uppercase; letter-spacing: .06em; background: var(--badge); color: var(--accent); white-space: nowrap; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.pill.plain { background: var(--sunken); color: var(--muted); }
+.field-input { width: 100%; border: 1px solid var(--hair); border-radius: var(--r-field); background: var(--surface); padding: 10px 12px; }
+.field-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--badge); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--hair); background: var(--surface); border-radius: var(--r-pill); padding: 5px 12px; font-size: .85rem; cursor: pointer; color: var(--ink); }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--badge); border-color: var(--accent); color: var(--accent); }
+.banner { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: 12px; background: var(--warn-bg); color: var(--warn); font-size: .9rem; }
+.banner b { color: inherit; }
+.empty { padding: 36px 20px; text-align: center; color: var(--muted); }
+
+/* ---------- composer */
+.composer { padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--hair); align-self: flex-start; max-width: 100%; }
+.seg button { border: 0; background: none; padding: 7px 14px; border-radius: 9px; cursor: pointer; font-weight: 600; color: var(--muted); }
+.seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(13,10,36,.12); }
+.prompt { width: 100%; min-height: 84px; resize: vertical; border: 0; background: none; padding: 2px; font-size: 1.05rem; line-height: 1.5; }
+.prompt:focus { outline: none; }
+.prompt-box { border: 1px solid var(--hair); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+.prompt-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--badge); }
+.opts { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+.opt { display: flex; align-items: center; gap: 8px; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--hair); border-radius: var(--r-pill); overflow: hidden; }
+.stepper button { border: 0; background: var(--surface); width: 30px; height: 30px; cursor: pointer; font-weight: 600; }
+.stepper output { min-width: 26px; text-align: center; font-family: var(--mono); font-size: .85rem; }
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .9rem; }
+.switch input { appearance: none; width: 34px; height: 20px; border-radius: 20px; background: var(--hair); position: relative; cursor: pointer; margin: 0; transition: background .15s; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(14px); }
+.composer-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--hair); padding-top: 14px; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.examples .chip { font-size: .8rem; padding: 4px 10px; color: var(--muted); }
+details.adv summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
+details.adv[open] summary { margin-bottom: 10px; }
+.adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.adv-grid label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; }
+.hint { font-size: .8rem; color: var(--muted); }
+
+/* ---------- run log */
+.run { padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; }
+.run-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.run-title h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.steps { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.steps li { display: grid; grid-template-columns: 56px 16px minmax(0, 1fr); gap: 8px; align-items: center; font-size: .88rem; }
+.steps .t { font: .72rem var(--mono); color: var(--muted); }
+.tick { width: 14px; height: 14px; border-radius: 50%; background: var(--good-bg); color: var(--good); display: grid; place-items: center; font-size: 10px; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--badge); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } * { transition: none !important; } }
+
+/* ---------- concept + variants */
+.concept-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.concept-head .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; color: var(--muted); font-size: .85rem; }
+.vtabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.vtab { display: flex; align-items: center; gap: 10px; border: 1px solid var(--hair); background: var(--surface); border-radius: 12px; padding: 8px 14px 8px 8px; cursor: pointer; text-align: left; }
+.vtab .letter { width: 28px; height: 28px; border-radius: 8px; background: var(--sunken); display: grid; place-items: center; font: 800 .95rem var(--display); }
+.vtab small { display: block; color: var(--muted); font-size: .76rem; }
+.vtab[aria-selected="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--badge); }
+.vtab[aria-selected="true"] .letter { background: var(--grad); color: #fff; }
+.variant { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0; overflow: hidden; }
+.variant > * { min-width: 0; }
+.asset-col { background: var(--sunken); border-right: 1px solid var(--hair); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.asset-frame { position: relative; border-radius: 12px; border: 1px dashed var(--hair); background: var(--surface); display: grid; place-items: center; overflow: hidden; }
+.asset-frame img { display: block; width: 100%; height: auto; }
+.asset-frame .none { padding: 48px 20px; text-align: center; color: var(--muted); font-size: .9rem; }
+.asset-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.parts { padding: 4px 22px 20px; display: flex; flex-direction: column; }
+.part { padding-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.part + .part { border-top: 1px solid var(--hair); margin-top: 18px; }
+.part-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.part-head h3 { display: flex; align-items: baseline; gap: 8px; }
+.part-head h3 .n { font-family: var(--mono); font-size: .75rem; color: var(--accent); font-weight: 500; }
+.idea { max-width: 68ch; }
+.onimage { border-radius: 12px; border: 1px solid var(--hair); background: var(--sunken); padding: 14px 16px; white-space: pre-wrap; }
+.onimage .hl { font: 800 1.15rem/1.25 var(--display); }
+.onimage .sub { color: var(--muted); margin-top: 4px; }
+.mfield { display: flex; flex-direction: column; gap: 6px; }
+.mfield-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mfield-top .name { font-weight: 600; font-size: .88rem; }
+.mfield-top .right { display: flex; align-items: center; gap: 8px; }
+.counter { font: .72rem var(--mono); color: var(--muted); }
+.counter.over { color: var(--warn); }
+.mvalue { border: 1px solid var(--hair); border-radius: var(--r-field); padding: 10px 12px; background: var(--surface); white-space: pre-wrap; overflow-wrap: anywhere; font-size: .93rem; }
+.mvalue.select { display: flex; justify-content: space-between; align-items: center; }
+.mvalue.select::after { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); }
+.notes { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; font-size: .85rem; color: var(--muted); }
+.notes div::before { content: "Note · "; font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
+@media (max-width: 980px) { .variant { grid-template-columns: 1fr; } .asset-col { border-right: 0; border-bottom: 1px solid var(--hair); } }
+
+/* ---------- library */
+.lib-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.lib-tools .field-input { max-width: 320px; }
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.tile { display: flex; flex-direction: column; overflow: hidden; cursor: pointer; text-align: left; padding: 0; transition: border-color .15s, transform .15s; }
+.tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+.thumb { aspect-ratio: 4 / 3; max-width: 100%; background: var(--sunken); display: grid; place-items: center; border-bottom: 1px solid var(--hair); overflow: hidden; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb .ph { color: var(--muted); font-size: .8rem; }
+.tile-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.tile-body strong { font-family: var(--display); font-weight: 800; font-size: .95rem; line-height: 1.25; }
+
+/* ---------- research */
+.stats { display: flex; flex-wrap: wrap; gap: 8px 24px; color: var(--muted); font-size: .88rem; }
+.stats b { color: var(--ink); font-family: var(--display); font-size: 1.1rem; }
+.finding { padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+.finding-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.finding p { max-width: 72ch; }
+.evidence { border-left: 3px solid var(--badge); padding-left: 12px; color: var(--muted); font-size: .9rem; }
+.sources { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.sources li { display: flex; gap: 8px; min-width: 0; }
+.sources a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.unverified { border-color: var(--warn); }
+.unverified summary { cursor: pointer; padding: 14px 18px; font-weight: 600; color: var(--warn); }
+.unverified .body { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 10px; }
+.theme-chips { margin-top: 4px; }
+
+/* ---------- setup */
+.setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--hair); }
+.row:first-child { border-top: 0; }
+.row .what { color: var(--muted); font-size: .84rem; grid-column: 1; }
+.row .env { grid-column: 1; }
+.row .pill { grid-row: 1; grid-column: 2; align-self: start; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.swatch { border: 1px solid var(--hair); border-radius: 12px; overflow: hidden; font-size: .78rem; }
+.swatch i { display: block; height: 44px; }
+.swatch div { padding: 6px 8px; }
+.form-stack { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- md, modal, toast, login */
+.md { display: flex; flex-direction: column; gap: 8px; }
+.md pre { background: var(--sunken); border-radius: 10px; padding: 10px; white-space: pre-wrap; margin: 0; font-size: .9rem; }
+.overlay { position: fixed; inset: 0; background: rgba(13,10,36,.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.modal { max-width: 480px; width: 100%; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.modal .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg);
+  padding: 10px 18px; border-radius: var(--r-pill); font-size: .88rem; z-index: 30; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.login { min-height: 100vh; display: grid; place-items: center; padding-inline: 16px; }
+.login .card { width: 100%; max-width: 380px; padding: 28px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow); }
+.error-text { color: var(--bad); font-size: .88rem; }
+</style>
+
+<div class="login" id="login" hidden>
+  <form class="card" id="loginForm">
+    <div class="brand"><span class="brand-mark">V</span><span class="brand-name">Vike Ads Studio</span></div>
+    <div><h2>Sign in</h2><p class="muted">This studio spends API credits, so it's password-protected.</p></div>
+    <label class="form-stack"><span class="label">Password</span><input class="field-input" id="loginPassword" type="password" autocomplete="current-password" required></label>
+    <p class="error-text" id="loginError" hidden></p>
+    <button class="btn" type="submit">Sign in</button>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
+  <aside class="rail">
+    <div class="brand"><span class="brand-mark">V</span><span><span class="brand-name">Vike Ads Studio</span><span class="label brand-sub">Meta ad creative</span></span></div>
+    <nav class="nav" aria-label="Sections">
+      <button data-view="studio" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.6 5.6L20 11l-5.4 2.4L12 19l-2.6-5.6L4 11l5.4-2.4z"/></svg>Studio</button>
+      <button data-view="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Library<span class="count" id="libCount"></span></button>
+      <button data-view="research"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Research</button>
+      <button data-view="setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Setup</button>
+    </nav>
+    <div class="rail-foot">
+      <div class="conn"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
+      <button class="linkbtn" id="logoutBtn" hidden>Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="wrap">
+      <div class="banner" id="demoBanner" hidden>
+        <span><b>Preview with sample data.</b> Runs here are simulated and nothing calls OpenAI, Gemini or fal.ai. Deploy the app with your API keys to connect the real agents.</span>
+      </div>
+
+      <!-- ===================== STUDIO ===================== -->
+      <section id="view-studio" class="wrap" aria-labelledby="studioTitle">
+        <div class="view-head">
+          <div><h1 id="studioTitle">Studio</h1><p>Ask for research, a full 4-part ad concept, or just the image for a concept you already have.</p></div>
+        </div>
+
+        <form class="card composer" id="composer">
+          <div class="seg" role="tablist" aria-label="What to run">
+            <button type="button" role="tab" data-mode="idea" aria-selected="true">Ad idea</button>
+            <button type="button" role="tab" data-mode="research" aria-selected="false">Research</button>
+            <button type="button" role="tab" data-mode="image" aria-selected="false">Image only</button>
+            <button type="button" role="tab" data-mode="ask" aria-selected="false">Ask anything</button>
+          </div>
+          <div class="prompt-box">
+            <label for="prompt" class="label" id="promptLabel">Who is the ad for?</label>
+            <textarea id="prompt" class="prompt" rows="3"></textarea>
+          </div>
+
+          <div class="opts" id="opts-idea">
+            <div class="opt"><span class="label">Variants</span>
+              <span class="stepper"><button type="button" id="varMinus" aria-label="Fewer variants">−</button><output id="varCount">3</output><button type="button" id="varPlus" aria-label="More variants">+</button></span></div>
+            <div class="opt"><span class="label">Image format</span>
+              <div class="chips" id="formatChips">
+                <button type="button" class="chip" data-format="" aria-pressed="true">Mix</button>
+                <button type="button" class="chip" data-format="dashboard" aria-pressed="false">Dashboard</button>
+                <button type="button" class="chip" data-format="review_card" aria-pressed="false">Review card</button>
+                <button type="button" class="chip" data-format="dm_screenshot" aria-pressed="false">DM / iMessage</button>
+              </div></div>
+            <label class="switch"><input type="checkbox" id="renderImages" checked> Render images now</label>
+          </div>
+
+          <div class="opts" id="opts-research" hidden>
+            <div class="opt" style="flex-wrap:wrap"><span class="label">Themes</span><div class="chips" id="themeChips"></div></div>
+          </div>
+
+          <div id="opts-image" hidden>
+            <div class="opt" style="flex-wrap:wrap"><span class="label">Recent</span><div class="chips" id="recentChips"></div></div>
+            <details class="adv" style="margin-top:12px">
+              <summary>Advanced</summary>
+              <div class="adv-grid">
+                <label>Image backend
+                  <select class="field-input" id="backend"><option value="">Automatic (Nano Banana, then fal.ai)</option><option value="nano-banana">Nano Banana only first</option><option value="fal">fal.ai first</option></select></label>
+                <label>Photo-realistic client avatar
+                  <input class="field-input" id="photoreal" placeholder="Leave empty for [Client Name] + silhouette">
+                  <span class="hint">Only for a real client who consented to a generated likeness. You'll be asked to confirm.</span></label>
+              </div>
+            </details>
+          </div>
+
+          <div class="composer-foot">
+            <div class="examples" id="examples"></div>
+            <div class="opt"><span class="hint" id="kbdHint">Ctrl + Enter</span><button class="btn" type="submit" id="runBtn">Write concepts</button></div>
+          </div>
+        </form>
+
+        <div id="runPanel"></div>
+        <div id="results" class="wrap"></div>
+      </section>
+
+      <!-- ===================== LIBRARY ===================== -->
+      <section id="view-library" class="wrap" hidden aria-labelledby="libTitle">
+        <div class="view-head"><div><h1 id="libTitle">Library</h1><p>Every concept you've agreed on. Open one to copy its fields or render its image again.</p></div></div>
+        <div class="lib-tools">
+          <div class="chips" id="libFilter">
+            <button type="button" class="chip" data-format="" aria-pressed="true">All</button>
+            <button type="button" class="chip" data-format="dashboard" aria-pressed="false">Dashboard</button>
+            <button type="button" class="chip" data-format="review_card" aria-pressed="false">Review card</button>
+            <button type="button" class="chip" data-format="dm_screenshot" aria-pressed="false">DM / iMessage</button>
+          </div>
+          <input class="field-input" id="libSearch" type="search" placeholder="Search concepts, audiences, IDs" aria-label="Search the library">
+        </div>
+        <div class="lib-grid" id="libGrid"></div>
+      </section>
+
+      <!-- ===================== RESEARCH ===================== -->
+      <section id="view-research" class="wrap" hidden aria-labelledby="resTitle">
+        <div class="view-head">
+          <div><h1 id="resTitle">Research</h1><p id="resSub">Trend findings with sources. Only verified findings feed new ad ideas.</p></div>
+          <div class="opt"><select class="field-input" id="reportPicker" aria-label="Choose a report" style="max-width:260px"></select><button class="btn" id="newResearch">Run research</button></div>
+        </div>
+        <div id="researchBody" class="wrap"></div>
+      </section>
+
+      <!-- ===================== SETUP ===================== -->
+      <section id="view-setup" class="wrap" hidden aria-labelledby="setupTitle">
+        <div class="view-head"><div><h1 id="setupTitle">Setup</h1><p>What's connected, the brand rules every agent follows, and client likeness consent.</p></div></div>
+        <div class="setup-grid">
+          <div class="card pad"><h2>Connections</h2><p class="hint" style="margin:4px 0 8px">Keys live in the server's environment variables, never in the browser.</p><div class="rows" id="integrations"></div></div>
+          <div class="card pad form-stack"><h2>Weekly research</h2><p id="scheduleText" class="muted"></p><div class="rows" id="models"></div></div>
+          <div class="card pad form-stack">
+            <h2>Client likeness consent</h2>
+            <p class="muted">Review cards and DMs always use [Client Name] and a silhouette. A photo-realistic named avatar is only possible for a name recorded here.</p>
+            <div class="rows" id="consentList"></div>
+            <button class="btn quiet" id="addConsent" type="button">Record consent for a client</button>
+          </div>
+          <div class="card pad form-stack"><h2>Brand</h2><div class="swatches" id="swatches"></div><div class="rows" id="brandRules"></div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="consentOverlay" hidden>
+  <form class="card modal" id="consentForm" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+    <h2 id="consentTitle">Confirm client consent</h2>
+    <label class="form-stack"><span class="label">Client name</span><input class="field-input" id="consentName" required></label>
+    <p id="consentQuestion"></p>
+    <label class="form-stack"><span class="label">Type to confirm</span>
+      <input class="field-input" id="consentPhrase" autocomplete="off" required>
+      <span class="hint">Type exactly: <b id="consentPhraseHint">yes, real client with consent</b></span></label>
+    <p class="error-text" id="consentError" hidden></p>
+    <div class="actions"><button type="button" class="btn quiet" id="consentCancel">Keep the placeholder</button><button class="btn" type="submit">Record consent</button></div>
+  </form>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+function h(tag, attrs = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "text") el.textContent = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  return el;
+}
+const put = (el, ...kids) => el.replaceChildren(...kids.flat().filter(k => k != null && k !== false));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("vike." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("vike." + k, JSON.stringify(v)); } catch {} },
+};
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+async function copy(text, label = "Copied") {
+  try { await navigator.clipboard.writeText(text); toast(label); }
+  catch { const ta = h("textarea", {style: "position:fixed;opacity:0"}); ta.value = text; document.body.append(ta); ta.select();
+    try { document.execCommand("copy"); toast(label); } catch { toast("Select the text and copy it manually"); } ta.remove(); }
+}
+const FORMAT = { dashboard: "Dashboard screenshot", review_card: "Review card", dm_screenshot: "DM / iMessage" };
+const LIMITS = { primary_text: 125, headline: 40, description: 30 };
+const fmtDate = s => { try { return new Date(s).toLocaleString(undefined, {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}); } catch { return s; } };
+const host = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+
+/* ======================================================================
+   Sample data for the hosted preview (no backend). Clearly marked; never
+   shown when the page is served by the real app.
+   ====================================================================== */
+const svgUri = s => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
+const SAMPLE_IMG = {
+  review_card: svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#F5F4FB"/>
+    <g font-family="Helvetica, Arial, sans-serif"><path d="M110 120h580a16 16 0 0 1 16 16v300a16 16 0 0 1-16 16H190l-46 40 8-40h-42a16 16 0 0 1-16-16V136a16 16 0 0 1 16-16z" fill="#fff" stroke="#E1DFEC" stroke-width="2"/>
+    <circle cx="164" cy="184" r="30" fill="#D9D7E3"/><circle cx="164" cy="176" r="11" fill="#B9B6C8"/><path d="M142 204a22 18 0 0 1 44 0z" fill="#B9B6C8"/>
+    <text x="212" y="192" font-size="24" font-weight="700" fill="#0D0A24">[Client Name]</text>
+    <g transform="translate(134 236)" font-size="30"><text fill="#3814FF">★</text><text x="34" fill="none" stroke="#3814FF" stroke-width="1.4">★</text><text x="68" fill="none" stroke="#3814FF" stroke-width="1.4">★</text><text x="102" fill="none" stroke="#3814FF" stroke-width="1.4">★</text><text x="136" fill="none" stroke="#3814FF" stroke-width="1.4">★</text></g>
+    <g font-size="26" fill="#0D0A24"><text x="134" y="306">One star. We launched ads in spring and the first</text><text x="134" y="344">parent enquiries came in within a month.</text><text x="134" y="382">Now I need a bigger waiting list.</text></g></g></svg>`),
+  dm_screenshot: svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800"><rect width="600" height="800" fill="#fff"/>
+    <g font-family="-apple-system, Helvetica, Arial, sans-serif"><text x="36" y="40" font-size="20" font-weight="600" fill="#000">9:41</text><rect x="510" y="26" width="44" height="18" rx="5" fill="none" stroke="#000" stroke-width="2"/><rect x="514" y="30" width="30" height="10" rx="2" fill="#000"/>
+    <path d="M40 92l-12 14 12 14" stroke="#007AFF" stroke-width="4" fill="none"/><circle cx="300" cy="96" r="28" fill="#D9D7E3"/><circle cx="300" cy="88" r="10" fill="#B9B6C8"/><path d="M281 116a19 15 0 0 1 38 0z" fill="#B9B6C8"/>
+    <text x="300" y="148" font-size="15" text-anchor="middle" fill="#000">[Client Name]</text><line x1="0" y1="168" x2="600" y2="168" stroke="#E5E5EA"/>
+    <text x="300" y="210" font-size="14" text-anchor="middle" fill="#8E8E93">Today 9:41 AM</text>
+    <rect x="28" y="232" width="380" height="76" rx="22" fill="#E9E9EB"/><text x="50" y="263" font-size="20" fill="#000">the enquiry form actually</text><text x="50" y="291" font-size="20" fill="#000">works now?? 😅</text>
+    <rect x="182" y="326" width="390" height="76" rx="22" fill="#007AFF"/><text x="204" y="357" font-size="20" fill="#fff">first parent leads came in</text><text x="204" y="385" font-size="20" fill="#fff">within the month 🙌</text>
+    <rect x="28" y="420" width="400" height="48" rx="22" fill="#E9E9EB"/><text x="50" y="451" font-size="20" fill="#000">ok, what about the waitlist</text>
+    <text x="570" y="494" font-size="13" text-anchor="end" fill="#8E8E93">Delivered</text>
+    <rect x="80" y="724" width="490" height="44" rx="22" fill="none" stroke="#D1D1D6" stroke-width="2"/><text x="104" y="752" font-size="18" fill="#8E8E93">iMessage</text><circle cx="44" cy="746" r="18" fill="#E9E9EB"/><text x="44" y="753" font-size="22" text-anchor="middle" fill="#8E8E93">+</text></g></svg>`),
+  dashboard: svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#F5F4FB"/>
+    <g font-family="Helvetica, Arial, sans-serif"><rect x="40" y="190" width="720" height="170" rx="8" fill="#fff" stroke="#DADDE1" stroke-width="2"/><line x1="40" y1="250" x2="760" y2="250" stroke="#DADDE1" stroke-width="2"/>
+    <g font-size="16" font-weight="700" fill="#1C2B33"><text x="66" y="228">Campaign</text><text x="330" y="228">Results</text><text x="450" y="228">Cost per result</text><text x="610" y="228">Amount spent</text></g>
+    <rect x="62" y="291" width="32" height="18" rx="9" fill="#0866FF"/><circle cx="85" cy="300" r="7" fill="#fff"/>
+    <g font-size="17" fill="#1C2B33"><text x="104" y="306">Spring enrolment — Lviv</text><text x="330" y="306">27</text><text x="476" y="306">$5.40</text><text x="610" y="306">$145.80</text></g>
+    <text x="330" y="328" font-size="13" fill="#65676B">Leads</text><text x="476" y="328" font-size="13" fill="#65676B">Per lead</text>
+    <ellipse cx="503" cy="306" rx="58" ry="34" fill="none" stroke="#3814FF" stroke-width="4" transform="rotate(-4 503 306)"/>
+    <text x="520" y="410" font-size="24" fill="#3814FF" font-style="italic">per parent enquiry</text></g></svg>`),
+};
+const SAMPLE_CONCEPT = {
+  id: "c-20261001-7a3e", name: "The one-star pitch", created_at: "2026-10-01T08:12:00Z", research_id: "r-20260928-41bc",
+  request: "Private preschools and kindergartens in Lviv",
+  variants: [
+    { id: "c-20261001-7a3e-A", label: "A", origin: "openai",
+      idea: "A one-star review card that reads like a complaint and lands as praise: the reviewer grumbles that the first parent enquiries arrived within a month of launching ads, and now the waiting list is the problem. The hook is a pattern-interrupt, a negative review that is secretly a result, built for owners and directors of private preschools and kindergartens in Lviv, aged 30 to 55, who follow early-childhood-education and local-parenting pages and post enrolment updates on Instagram themselves. They know enrolment is slow but have never hired an agency, so this runs cold, at the top of the funnel.",
+      on_image_text: { headline: "Our angriest review", subheadline: "A Lviv preschool had parent enquiries within a month" },
+      meta: { primary_text: "One star, apparently.\n\nA Lviv preschool had its first parent leads within a month of launching ads.\n\nPlans from $200/mo. No contract.", headline: "Preschool ads from $200/mo", description: "No long-term contract", cta: "Learn More" },
+      image_spec: { format: "review_card", illustrative_numbers: false }, image: { url: SAMPLE_IMG.review_card, backend: "nano-banana", model: "gemini-3-pro-image-preview", qa_passed: true, qa_issues: [] } },
+    { id: "c-20261001-7a3e-B", label: "B", origin: "openai",
+      idea: "A screenshot-native iMessage exchange between a preschool director and the person running their ads, where the named friction is the enquiry form nobody used to fill in. The hook is curiosity: the director's disbelief does the selling and the reply carries the proof point. Built for directors of private kindergartens in Lviv, aged 30 to 50, interested in Instagram for business and early-years education, who have already engaged with Vike posts or visited the site, so it sits in the warm, middle-of-funnel retargeting audience.",
+      on_image_text: { headline: "The enquiry form works now", subheadline: "Want the same for your kindergarten?" },
+      meta: { primary_text: "\"The enquiry form actually works now??\"\n\nThat's the message we like getting. For one Lviv preschool, the first parent leads arrived within a month.\n\nSend us a message and we'll look at your page for free.", headline: "Get a free growth audit", description: "", cta: "Send Message" },
+      image_spec: { format: "dm_screenshot", illustrative_numbers: false }, image: { url: SAMPLE_IMG.dm_screenshot, backend: "nano-banana", model: "gemini-3-pro-image-preview", qa_passed: true, qa_issues: [] } },
+    { id: "c-20261001-7a3e-C", label: "C", origin: "openai",
+      idea: "An Ads Manager crop with one clean row and the cost per lead circled by hand, framed as what a month of enrolment ads looks like for a small preschool. The hook is a quantified friction: parents are expensive to reach until you see the per-enquiry number. Built for owners of 1 to 3 site private preschools in Lviv and Kyiv, aged 30 to 55, who boost posts themselves and follow small-business marketing pages; they are comparing options, so this targets the hot, bottom-of-funnel audience of site visitors and form starters.",
+      on_image_text: { headline: "What a month of preschool ads looks like", subheadline: "Month-to-month from $200. No contract." },
+      meta: { primary_text: "One row. One number that matters: what each parent enquiry costs.\n\nWe run Meta and Google ads for Lviv preschools on month-to-month plans from $200.\n\nGet a quote for your enrolment season.", headline: "Enrolment ads, priced monthly", description: "From $200 a month", cta: "Get Quote" },
+      image_spec: { format: "dashboard", illustrative_numbers: true }, image: { url: SAMPLE_IMG.dashboard, backend: "fal", model: "fal-ai/nano-banana-pro", qa_passed: true, qa_issues: [] } },
+  ],
+};
+SAMPLE_CONCEPT.variants[1].meta.description = null;
+const SAMPLE_NOTES = ["c-20261001-7a3e-C: dashboard numbers are illustrative. Swap in real account data before running."];
+const SAMPLE_REPORT = {
+  id: "r-20260928-41bc", topic: "Ad creative trends (sample)", created_at: "2026-09-28T06:00:00Z",
+  sources: [
+    { id: "S1", title: "Sample source: creative strategy newsletter", url: "https://example.com/negative-review-hooks", kind: "web" },
+    { id: "S2", title: "Sample source: agency case study", url: "https://example.com/screenshot-creative", kind: "web" },
+    { id: "S3", title: "Sample source: Meta Ad Library listing", url: "https://www.facebook.com/ads/library/", kind: "meta_ad_library" },
+    { id: "S4", title: "Sample source: industry blog", url: "https://example.org/lo-fi-statics", kind: "web" },
+  ],
+  findings: [
+    { trend: "Negative-review hooks", summary: "Sample finding. Advertisers lead with a one-star or 'complaint' review whose content is actually a result. The mismatch between the rating and the text stops the scroll.", evidence: "Sample evidence: several service brands running review-card statics with a single filled star.", formats: ["review_card"], source_ids: ["S1", "S3"], providers: ["openai"], verification: "sourced", verification_note: "grounded in cited sources" },
+    { trend: "Screenshot-native creative", summary: "Sample finding. iMessage and DM layouts read as user content rather than an ad, which helps on placements where polished statics are skipped.", evidence: "Sample evidence: chat-reveal statics with two or three bubbles and no logo.", formats: ["dm_screenshot"], source_ids: ["S2"], providers: ["deepseek", "verified by openai judge + openai web search"], verification: "cross_checked", verification_note: "Confirmed by a fresh search result." },
+    { trend: "One circled number", summary: "Sample finding. Results screenshots work best cropped to a single row with one hand-annotated stat, instead of a full dashboard.", evidence: "Sample evidence: agency ads showing an Ads Manager row with cost per result circled.", formats: ["dashboard"], source_ids: ["S2", "S3"], providers: ["openai"], verification: "sourced", verification_note: "grounded in cited sources" },
+    { trend: "Lo-fi over polish", summary: "Sample finding. Plain, native-looking statics are holding up against heavily designed creative, especially for local services.", evidence: "", formats: [], source_ids: ["S4"], providers: ["openai"], verification: "sourced", verification_note: "grounded in cited sources" },
+  ],
+  unverified_leads: [
+    { trend: "Emoji headlines triple CTR", summary: "Sample unverified lead: a DeepSeek claim that no second source supported.", formats: [], source_ids: [], providers: ["deepseek"], verification: "unverified", verification_note: "DeepSeek-only, not confirmed by a second source" },
+  ],
+  manual_links: [
+    { id: "M1", title: "Browse Meta Ad Library: \"worst review\"", url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IE&q=worst+review&search_type=keyword_unordered&media_type=image" },
+    { id: "M2", title: "Browse Meta Ad Library: \"text message\"", url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IE&q=text+message&search_type=keyword_unordered&media_type=image" },
+  ],
+  notes: [],
+};
+const SAMPLE_STATUS = {
+  integrations: { "openai": false, "deepseek": false, "gemini (primary images)": false, "fal.ai (secondary images)": false, "google custom search": false, "meta ad library api": false },
+  consent_phrase: "yes, real client with consent",
+  themes: { one_star_review: "1-star / negative-review ad format", fake_dm: "Fake DM / iMessage screenshot ads", dashboard: "Dashboard / before-after results screenshots", anti_ad: "Anti-ad / pattern-interrupt formats", authenticity: "Authenticity-over-polish shift" },
+  schedule: { enabled: true, day: "mon", hour: 8, timezone: "Europe/Kyiv" },
+  models: { copy: "gpt-5", images: "gemini-3-pro-image-preview", fallback_images: "fal-ai/nano-banana-pro" },
+};
+const SAMPLE_BRAND = { colors: { primary_accent: "#3814FF", secondary_accent: "#7E33FF", ink: "#0D0A24", muted_body: "#6E6C82", light_background: "#F5F4FB", hairline_border: "#E1DFEC", badge_background: "#EEEBFF" },
+  typography: { headline: "Archivo, weight 800, sentence case, never all-caps, no italics or underlines", label: "IBM Plex Mono, uppercase, small, data tags only" },
+  components: { buttons: "full pill radius (100px), gradient fill", cards: "white, 16px radius, 1px hairline border" } };
+const DEMO_STEPS = {
+  idea: ["Using research r-20260928-41bc (4 verified findings)", "Writing 1 concept(s) × 3 variants with OpenAI", "Checking variant A (openai)", "Checking variant B (openai)", "Checking variant C (openai)", "Saved c-20261001-7a3e with 3 variant(s)", "Rendering A · Review card", "Generating with nano-banana", "Checking the image: spelling, no headline, no CTA, no gradient", "Rendering B · DM / iMessage screenshot", "Generating with nano-banana", "Rendering C · Dashboard / Ads Manager screenshot", "Generating with nano-banana", "Generating with fal (fallback)"],
+  research: ["Searching the web (11 searches via openai web search)", "Reading 15 source pages", "Collected 24 sources", "Writing findings with OpenAI", "DeepSeek is writing a second set of findings", "Cross-checking DeepSeek finding 1 of 2", "Cross-checking DeepSeek finding 2 of 2"],
+  image: ["Rendering A · Review card", "Generating with nano-banana", "Checking the image: spelling, no headline, no CTA, no gradient"],
+};
+const demo = {
+  jobs: {},
+  start(body) {
+    const action = body.action === "ask" ? (/research/i.test(body.text) ? "research" : /image/i.test(body.text) ? "image" : "idea") : body.action;
+    const id = "demo" + Math.random().toString(16).slice(2, 8);
+    const job = { id, action, label: body.text || "Ad creative trends", status: "running", steps: [], created: Date.now() / 1000, result: null, error: null };
+    this.jobs[id] = job;
+    const steps = DEMO_STEPS[action];
+    steps.forEach((s, i) => setTimeout(() => job.steps.push({ at: Date.now() / 1000, text: s }), 450 * (i + 1)));
+    setTimeout(() => {
+      job.status = "done";
+      if (action === "research") job.result = { kind: "research", report: SAMPLE_REPORT, notes: [], concepts: [] };
+      else if (action === "image") job.result = { kind: "image", concepts: [SAMPLE_CONCEPT], notes: [], markdown: SAMPLE_CONCEPT.variants[0].id };
+      else job.result = { kind: "concepts", concepts: [SAMPLE_CONCEPT], notes: SAMPLE_NOTES };
+    }, 450 * (steps.length + 1));
+    return job;
+  },
+  async api(path, opts = {}) {
+    await new Promise(r => setTimeout(r, 120));
+    if (path === "api/session") return { auth_required: false, authenticated: true };
+    if (path === "api/status") return SAMPLE_STATUS;
+    if (path === "api/concepts") return [SAMPLE_CONCEPT];
+    if (path === "api/research") return [{ id: SAMPLE_REPORT.id, topic: SAMPLE_REPORT.topic, created_at: SAMPLE_REPORT.created_at, findings: 4 }];
+    if (path.startsWith("api/research/")) return { report: SAMPLE_REPORT };
+    if (path === "api/consents") return [];
+    if (path === "api/brand") return SAMPLE_BRAND;
+    if (path === "api/consent") return { ok: true };
+    if (path === "api/jobs" && opts.method === "POST") return this.start(JSON.parse(opts.body));
+    if (path.startsWith("api/jobs/")) return { ...this.jobs[path.split("/").pop()] };
+    throw new Error("Not available in the preview.");
+  },
+};
+
+/* ======================================================================
+   API
+   ====================================================================== */
+let DEMO = false, STATUS = SAMPLE_STATUS, CONCEPTS = [], CONSENT_PHRASE = "yes, real client with consent";
+async function api(path, opts = {}) {
+  if (DEMO) return demo.api(path, opts);
+  const r = await fetch(path, { credentials: "same-origin", headers: opts.body ? { "Content-Type": "application/json" } : {}, ...opts });
+  let data = null; try { data = await r.json(); } catch {}
+  if (r.status === 401 && path !== "api/login") { showLogin(); throw new Error("Sign in to continue."); }
+  if (!r.ok) throw new Error((data && (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))) || `Request failed (${r.status})`);
+  return data;
+}
+const post = (path, body) => api(path, { method: "POST", body: JSON.stringify(body) });
+
+/* ======================================================================
+   Navigation
+   ====================================================================== */
+function go(view) {
+  for (const b of $$(".nav button")) b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current");
+  for (const v of ["studio", "library", "research", "setup"]) $("#view-" + v).hidden = v !== view;
+  store.set("view", view);
+  if (view === "library") renderLibrary();
+  if (view === "research") loadResearch();
+  if (view === "setup") renderSetup();
+  window.scrollTo({ top: 0 });
+}
+$$(".nav button").forEach(b => b.addEventListener("click", () => go(b.dataset.view)));
+
+/* ======================================================================
+   Composer
+   ====================================================================== */
+const MODES = {
+  idea: { label: "Who is the ad for?", placeholder: "Private dental clinics in Lviv that boost their own Instagram posts", run: "Write concepts",
+    examples: ["Private preschools in Lviv", "Irish accountants, cold audience", "Dental clinics in Kyiv, retargeting"] },
+  research: { label: "Research topic (optional)", placeholder: "Leave empty for the five tracked creative trends, or name a niche", run: "Run research",
+    examples: ["Fake DM ads for agencies", "Local services in Ireland", "1-star review ads"] },
+  image: { label: "Which concept?", placeholder: "Variant ID like c-20261001-7a3e-B, or describe it: \"the preschool review card\"", run: "Render image", examples: [] },
+  ask: { label: "Ask anything", placeholder: "\"research fake DM ads\", \"give me an ad idea for gyms in Dublin\", \"generate the image for the latest\"", run: "Run",
+    examples: ["give me an ad idea for dental clinics in Lviv", "research anti-ad formats", "generate the image for the latest"] },
+};
+let mode = "idea", variants = 3, format = "", themes = new Set();
+function setMode(m) {
+  mode = m;
+  for (const b of $$(".seg button")) b.setAttribute("aria-selected", String(b.dataset.mode === m));
+  const cfg = MODES[m];
+  $("#promptLabel").textContent = cfg.label; $("#prompt").placeholder = cfg.placeholder; $("#runBtn").textContent = cfg.run;
+  $("#opts-idea").hidden = m !== "idea"; $("#opts-research").hidden = m !== "research"; $("#opts-image").hidden = m !== "image";
+  const ex = $("#examples"); put(ex, ...(cfg.examples.length ? [h("span", { class: "label", text: "Try" })] : []),
+    ...cfg.examples.map(t => h("button", { type: "button", class: "chip", onclick: () => { $("#prompt").value = t; $("#prompt").focus(); } }, t)));
+  if (m === "image") renderRecentChips();
+  store.set("mode", m);
+}
+$$(".seg button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+$("#varMinus").onclick = () => { variants = Math.max(1, variants - 1); $("#varCount").value = variants; };
+$("#varPlus").onclick = () => { variants = Math.min(6, variants + 1); $("#varCount").value = variants; };
+$("#formatChips").addEventListener("click", e => {
+  const c = e.target.closest(".chip"); if (!c) return; format = c.dataset.format;
+  for (const x of $$("#formatChips .chip")) x.setAttribute("aria-pressed", String(x === c));
+});
+function renderThemeChips() {
+  put($("#themeChips"), ...Object.entries(STATUS.themes || {}).map(([k, label]) =>
+    h("button", { type: "button", class: "chip", "aria-pressed": String(themes.has(k)), onclick: e => {
+      themes.has(k) ? themes.delete(k) : themes.add(k); e.currentTarget.setAttribute("aria-pressed", String(themes.has(k))); } }, label)),
+    h("span", { class: "hint", text: "None selected = all five" }));
+}
+function renderRecentChips() {
+  const vs = CONCEPTS.flatMap(c => c.variants.map(v => ({ c, v }))).slice(0, 6);
+  put($("#recentChips"), ...(vs.length ? vs.map(({ c, v }) => h("button", { type: "button", class: "chip", title: c.name,
+    onclick: () => { $("#prompt").value = v.id; } }, `${v.id.slice(-6)} · ${FORMAT[v.image_spec.format]}`))
+    : [h("span", { class: "hint", text: "No concepts yet. Write an ad idea first." })]));
+}
+$("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("#composer").requestSubmit(); } });
+$("#kbdHint").textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ + Enter" : "Ctrl + Enter";
+$("#composer").addEventListener("submit", e => {
+  e.preventDefault();
+  const text = $("#prompt").value.trim();
+  if (mode !== "research" && !text) { toast("Type a request first"); $("#prompt").focus(); return; }
+  const body = { action: mode, text };
+  if (mode === "idea") Object.assign(body, { variants, formats: format ? [format] : null, render_images: $("#renderImages").checked });
+  if (mode === "research") body.themes = themes.size ? [...themes] : null;
+  if (mode === "image") Object.assign(body, { backend: $("#backend").value || null, photoreal_name: $("#photoreal").value.trim() || null });
+  startJob(body);
+});
+
+/* ======================================================================
+   Jobs + live run log
+   ====================================================================== */
+let pollTimer = null;
+async function startJob(body) {
+  $("#runBtn").disabled = true;
+  try {
+    const job = await post("api/jobs", body);
+    store.set("lastJob", { id: job.id, body });
+    put($("#results"), );
+    track(job.id, body);
+  } catch (e) { $("#runBtn").disabled = false; showError(e.message); }
+}
+function track(id, body) {
+  clearTimeout(pollTimer);
+  const tick = async () => {
+    let job;
+    try { job = await api("api/jobs/" + id); }
+    catch (e) { $("#runBtn").disabled = false; put($("#runPanel"), ); showError(e.message); store.set("lastJob", null); return; }
+    renderRun(job);
+    if (job.status === "done" || job.status === "error") {
+      $("#runBtn").disabled = false; store.set("lastJob", null);
+      if (job.status === "error") return showError(job.error);
+      return handleResult(job.result, body);
+    }
+    pollTimer = setTimeout(tick, 1100);
+  };
+  tick();
+}
+const ACTION_NAME = { idea: "Ad idea", research: "Research", image: "Image only", ask: "Request" };
+function renderRun(job) {
+  const done = job.status === "done", err = job.status === "error";
+  const t0 = job.created, last = (job.finished || Date.now() / 1000);
+  const items = job.steps.map((s, i) => {
+    const current = !done && !err && i === job.steps.length - 1;
+    return h("li", {}, h("span", { class: "t tnum", text: `+${Math.max(0, Math.round(s.at - t0))}s` }),
+      current ? h("span", { class: "spin", "aria-hidden": "true" }) : h("span", { class: "tick", "aria-hidden": "true" }, "✓"), h("span", { text: s.text }));
+  });
+  if (!job.steps.length && !done) items.push(h("li", {}, h("span", { class: "t", text: "+0s" }), h("span", { class: "spin" }), h("span", { text: "Starting…" })));
+  const pill = err ? h("span", { class: "pill bad", text: "Failed" }) : done ? h("span", { class: "pill good", text: "Done" }) : h("span", { class: "pill", text: "Running" });
+  put($("#runPanel"), h("div", { class: "card run", "aria-live": "polite" },
+    h("div", { class: "run-title" }, pill, h("h3", { text: `${ACTION_NAME[job.action] || "Run"}: ${job.label}` })),
+    h("span", { class: "mono muted tnum", text: `${Math.round(last - t0)}s` }),
+    h("ol", { class: "steps" }, items)));
+}
+function showError(msg) {
+  put($("#results"), h("div", { class: "card pad" }, h("h3", { text: "That didn't work" }), h("p", { class: "error-text", style: "margin-top:6px", text: msg })));
+}
+async function handleResult(res, body) {
+  if (res.kind === "question" && res.pending_name) return askConsent(res.pending_name, res.question, () => startJob(body));
+  if (res.kind === "concepts" || res.kind === "image") {
+    await refreshConcepts();
+    const c = res.concepts[0]; if (!c) return;
+    const fresh = CONCEPTS.find(x => x.id === c.id) || c;
+    const vid = res.kind === "image" ? ((res.markdown || "").match(/c-\d{8}-[0-9a-f]{4}-[A-Z]/) || [])[0] : null;
+    showConcept(fresh, vid, res.notes || [], res.kind === "image");
+    return;
+  }
+  if (res.kind === "research") { renderReport(res.report, $("#results")); loadReportList(); return; }
+  put($("#results"), h("div", { class: "card pad md" }, ...mdBlocks(res.markdown || "")));
+}
+function mdBlocks(src) {
+  return src.split(/\n{2,}/).map(block => {
+    const el = h("p");
+    for (const line of block.split("\n")) {
+      const clean = line.replace(/^[-•]\s+/, "• ");
+      let rest = clean; const m = clean.match(/^(.*?)\*\*(.+?)\*\*(.*)$/);
+      if (m) { el.append(m[1], h("b", { text: m[2] })); rest = m[3]; }
+      el.append(rest, h("br"));
+    }
+    return el;
+  });
+}
+
+/* ======================================================================
+   Concept view: image (part 4) beside parts 1-3
+   ====================================================================== */
+function showConcept(c, variantId, notes = [], imageOnly = false) {
+  go("studio");
+  const out = $("#results");
+  let current = c.variants.find(v => v.id === variantId) || c.variants[0];
+  const tabs = h("div", { class: "vtabs", role: "tablist", "aria-label": "Variants" });
+  const body = h("div");
+  const paint = () => {
+    put(tabs, ...c.variants.map(v => h("button", { class: "vtab", role: "tab", "aria-selected": String(v === current), onclick: () => { current = v; paint(); } },
+      h("span", { class: "letter", text: v.label }), h("span", {}, FORMAT[v.image_spec.format], h("small", { text: v.origin === "deepseek" ? "DeepSeek challenger, verified" : v.meta.cta })))));
+    put(body, variantCard(c, current, imageOnly));
+  };
+  paint();
+  const head = h("div", { class: "concept-head" },
+    h("div", {}, h("span", { class: "label", text: imageOnly ? "Image for agreed concept" : "Concept" }), h("h2", { text: c.name }),
+      h("div", { class: "meta" }, h("span", { class: "mono", text: c.id }), h("span", { text: c.request }),
+        c.research_id ? h("span", { text: `Research ${c.research_id}` }) : h("span", { text: "Brand context only" }), h("span", { text: fmtDate(c.created_at) }))),
+    imageOnly ? null : h("button", { class: "btn quiet", onclick: () => copy(c.variants.map(v => plainVariant(c, v)).join("\n\n----------\n\n"), "All variants copied") }, "Copy all variants"));
+  put(out, head, tabs, body, notes.length ? h("div", { class: "card notes" }, ...notes.map(n => h("div", { text: n }))) : null);
+}
+function plainVariant(c, v) {
+  const m = v.meta, t = v.on_image_text;
+  return [`${v.id} · ${c.name} (variant ${v.label})`, "", "1. THE IDEA", v.idea, "", "2. ON-IMAGE TEXT", t.headline + (t.subheadline ? "\n" + t.subheadline : ""), "",
+    "3. META ADS MANAGER FIELDS", "Primary text:\n" + m.primary_text, "Headline: " + m.headline, ...(m.description ? ["Description: " + m.description] : []), "Call to action: " + m.cta, "",
+    "4. GENERATED IMAGE", FORMAT[v.image_spec.format] + (v.image && !DEMO ? ` · ${location.origin}/${v.image.url}` : "")].join("\n");
+}
+function metaField(name, key, value, kind = "text") {
+  const limit = LIMITS[key], len = (value || "").length;
+  return h("div", { class: "mfield" },
+    h("div", { class: "mfield-top" }, h("span", { class: "name", text: name }),
+      h("span", { class: "right" }, limit ? h("span", { class: "counter tnum" + (len > limit ? " over" : ""), title: len > limit ? `Meta shows about ${limit} characters before truncating` : "Within Meta's recommended length", text: `${len} / ${limit}` }) : null,
+        h("button", { type: "button", class: "btn quiet small", onclick: () => copy(value, `${name} copied`) }, "Copy"))),
+    h("div", { class: "mvalue" + (kind === "select" ? " select" : ""), text: value }));
+}
+function variantCard(c, v, imageOnly) {
+  const fmtLabel = FORMAT[v.image_spec.format];
+  const img = v.image;
+  const qa = img ? (img.qa_passed === false ? h("span", { class: "pill warn", title: (img.qa_issues || []).join("; "), text: "QA flagged" })
+    : img.qa_passed ? h("span", { class: "pill good", text: "QA passed" }) : h("span", { class: "pill plain", text: "No QA" })) : null;
+  const assetCol = h("div", { class: "asset-col" },
+    h("div", { class: "part-head" }, h("h3", {}, h("span", { class: "n", text: "4" }), "Generated image"), h("span", { class: "pill", text: fmtLabel })),
+    h("div", { class: "asset-frame" }, img ? h("img", { src: img.url, alt: `${fmtLabel} asset for ${v.id}`, loading: "lazy" })
+      : h("div", { class: "none" }, "Not rendered yet.", h("br"), "Copy is saved; render the image when you're ready.")),
+    h("div", { class: "asset-actions" },
+      img && !DEMO ? h("a", { class: "btn quiet small", href: img.url, download: `${v.id}.png` }, "Download") : null,
+      h("button", { type: "button", class: "btn quiet small", onclick: () => { setMode("image"); $("#prompt").value = v.id; startJob({ action: "image", text: v.id }); } }, img ? "Render again" : "Render image"),
+      qa, img ? h("span", { class: "hint", text: `${img.backend} · ${img.model}` }) : null),
+    h("p", { class: "hint", text: "Asset only: no headline, CTA button or background gradient. Add the on-image text in Adobe Express." }),
+    v.image_spec.illustrative_numbers ? h("p", { class: "hint", style: "color:var(--warn)", text: "Numbers are illustrative. Swap in real account data before running." }) : null);
+  if (imageOnly) return h("div", { class: "card variant", style: "grid-template-columns:minmax(0,1fr)" }, assetCol);
+
+  const t = v.on_image_text, m = v.meta;
+  const onImageText = t.headline + (t.subheadline ? "\n" + t.subheadline : "");
+  const parts = h("div", { class: "parts" },
+    h("div", { class: "part" }, h("div", { class: "part-head" }, h("h3", {}, h("span", { class: "n", text: "1" }), "The idea")), h("p", { class: "idea", text: v.idea })),
+    h("div", { class: "part" },
+      h("div", { class: "part-head" }, h("h3", {}, h("span", { class: "n", text: "2" }), "On-image text"), h("button", { type: "button", class: "btn quiet small", onclick: () => copy(onImageText, "On-image text copied") }, "Copy")),
+      h("div", { class: "onimage" }, h("div", { class: "hl", text: t.headline }), t.subheadline ? h("div", { class: "sub", text: t.subheadline }) : null)),
+    h("div", { class: "part" },
+      h("div", { class: "part-head" }, h("h3", {}, h("span", { class: "n", text: "3" }), "Meta Ads Manager fields"),
+        h("button", { type: "button", class: "btn quiet small", onclick: () => copy([`Primary text:\n${m.primary_text}`, `Headline: ${m.headline}`, ...(m.description ? [`Description: ${m.description}`] : []), `Call to action: ${m.cta}`].join("\n\n"), "Meta fields copied") }, "Copy all")),
+      metaField("Primary text", "primary_text", m.primary_text),
+      metaField("Headline", "headline", m.headline),
+      m.description ? metaField("Description", "description", m.description) : null,
+      metaField("Call to action", "cta", m.cta, "select")));
+  return h("div", { class: "card variant" }, assetCol, parts);
+}
+
+/* ======================================================================
+   Library
+   ====================================================================== */
+let libFormat = "";
+async function refreshConcepts() {
+  try { CONCEPTS = await api("api/concepts"); } catch { CONCEPTS = CONCEPTS || []; }
+  const n = CONCEPTS.reduce((a, c) => a + c.variants.length, 0);
+  $("#libCount").textContent = n ? String(n) : "";
+}
+$("#libFilter").addEventListener("click", e => {
+  const c = e.target.closest(".chip"); if (!c) return; libFormat = c.dataset.format;
+  for (const x of $$("#libFilter .chip")) x.setAttribute("aria-pressed", String(x === c)); renderLibrary(false);
+});
+$("#libSearch").addEventListener("input", () => renderLibrary(false));
+async function renderLibrary(fetch = true) {
+  if (fetch) await refreshConcepts();
+  const q = $("#libSearch").value.trim().toLowerCase();
+  const items = CONCEPTS.flatMap(c => c.variants.map(v => ({ c, v }))).filter(({ c, v }) =>
+    (!libFormat || v.image_spec.format === libFormat) &&
+    (!q || [c.name, c.request, v.id, v.idea, v.on_image_text.headline].join(" ").toLowerCase().includes(q)));
+  const grid = $("#libGrid");
+  if (!CONCEPTS.length) { put(grid, h("div", { class: "card empty", style: "grid-column:1/-1" }, h("h3", { text: "No concepts yet" }), h("p", { style: "margin-top:6px", text: "Write your first ad idea in the Studio. Every concept you create is kept here." }), h("button", { class: "btn", style: "margin-top:14px", onclick: () => { go("studio"); setMode("idea"); $("#prompt").focus(); } }, "Write an ad idea"))); return; }
+  if (!items.length) { put(grid, h("div", { class: "card empty", style: "grid-column:1/-1", text: "Nothing matches that search." })); return; }
+  put(grid, ...items.map(({ c, v }) => h("button", { class: "card tile", onclick: () => showConcept(c, v.id) },
+    h("div", { class: "thumb" }, v.image ? h("img", { src: v.image.url, alt: "", loading: "lazy" }) : h("span", { class: "ph", text: "No image yet" })),
+    h("div", { class: "tile-body" }, h("span", { class: "label", text: `${v.id.slice(-8)} · ${FORMAT[v.image_spec.format]}` }), h("strong", { text: v.on_image_text.headline }),
+      h("span", { class: "hint", text: `${c.name} · ${fmtDate(c.created_at)}` })))));
+}
+
+/* ======================================================================
+   Research
+   ====================================================================== */
+let REPORTS = [];
+async function loadReportList() {
+  try { REPORTS = await api("api/research"); } catch { REPORTS = []; }
+  put($("#reportPicker"), ...REPORTS.map(r => h("option", { value: r.id }, `${fmtDate(r.created_at)} · ${r.topic} (${r.findings})`)));
+  $("#reportPicker").hidden = !REPORTS.length;
+}
+async function loadResearch(id) {
+  if (!id) await loadReportList();
+  const target = id || (REPORTS[0] && REPORTS[0].id);
+  const box = $("#researchBody");
+  if (!target) { put(box, h("div", { class: "card empty" }, h("h3", { text: "No research yet" }), h("p", { style: "margin-top:6px", text: "Run research to pull current creative trends with sources. New ad ideas use the latest verified findings." }))); return; }
+  try { const { report } = await api("api/research/" + target); $("#reportPicker").value = target; renderReport(report, box); }
+  catch (e) { put(box, h("div", { class: "card pad error-text", text: e.message })); }
+}
+$("#reportPicker").addEventListener("change", e => loadResearch(e.target.value));
+$("#newResearch").addEventListener("click", () => { go("studio"); setMode("research"); $("#prompt").focus(); });
+function renderReport(r, box) {
+  const src = id => r.sources.find(s => s.id === id);
+  const verified = r.findings.length, cross = r.findings.filter(f => f.verification === "cross_checked").length;
+  const finding = (f, i) => h("article", { class: "card finding" },
+    h("div", { class: "finding-top" }, h("h3", {}, `${i + 1}. ${f.trend}`),
+      h("div", { class: "chips" }, ...f.formats.map(x => h("span", { class: "pill plain", text: FORMAT[x] })),
+        f.verification === "cross_checked" ? h("span", { class: "pill good", title: f.verification_note, text: "Cross-checked" }) : h("span", { class: "pill good", text: "Sourced" }))),
+    h("p", { text: f.summary }), f.evidence ? h("p", { class: "evidence", text: f.evidence }) : null,
+    h("ul", { class: "sources" }, ...f.source_ids.map(src).filter(Boolean).map(s => h("li", {}, h("span", { class: "mono muted", text: s.id }), h("a", { href: s.url, target: "_blank", rel: "noopener", text: s.title || host(s.url) })))));
+  put(box, 
+    h("div", { class: "card pad" }, h("span", { class: "label", text: `${r.id} · ${fmtDate(r.created_at)}` }), h("h2", { style: "margin-top:4px", text: r.topic }),
+      h("div", { class: "stats", style: "margin-top:10px" }, h("span", {}, h("b", { text: verified }), " verified findings"), h("span", {}, h("b", { text: cross }), " cross-checked from DeepSeek"),
+        h("span", {}, h("b", { text: r.sources.length }), " sources"), h("span", {}, h("b", { text: r.unverified_leads.length }), " unverified leads held back"))),
+    ...(r.findings.length ? r.findings.map(finding) : [h("div", { class: "card empty", text: "No verified findings in this run." })]),
+    r.unverified_leads.length ? h("details", { class: "card unverified" }, h("summary", {}, `Unverified leads (${r.unverified_leads.length}): DeepSeek-only, not used for ideas`),
+      h("div", { class: "body" }, ...r.unverified_leads.map(f => h("div", {}, h("b", { text: f.trend }), h("p", { class: "muted", text: `${f.summary} (${f.verification_note})` }))))) : null,
+    r.manual_links.length ? h("div", { class: "card pad" }, h("h3", { text: "Check by hand in the Meta Ad Library" }),
+      h("ul", { class: "sources", style: "margin-top:8px" }, ...r.manual_links.map(s => h("li", {}, h("a", { href: s.url, target: "_blank", rel: "noopener", text: s.title }))))) : null,
+    r.notes.length ? h("div", { class: "card notes" }, ...r.notes.map(n => h("div", { text: n }))) : null);
+}
+
+/* ======================================================================
+   Setup + consent
+   ====================================================================== */
+const INTEGRATION_INFO = {
+  "openai": ["Writes and checks all copy, judges claims, checks images", "OPENAI_API_KEY", "OpenAI"],
+  "deepseek": ["Second reasoner. Everything it writes is cross-checked", "DEEPSEEK_API_KEY", "DeepSeek"],
+  "gemini (primary images)": ["Nano Banana: the main image generator", "GEMINI_API_KEY", "Gemini (Nano Banana)"],
+  "fal.ai (secondary images)": ["Fallback image generator", "FAL_KEY", "fal.ai"],
+  "google custom search": ["Optional structured web search", "GOOGLE_CSE_API_KEY + GOOGLE_CSE_ID", "Google Custom Search"],
+  "meta ad library api": ["Optional: live ads from the Meta Ad Library", "META_AD_LIBRARY_TOKEN", "Meta Ad Library"],
+};
+const DAYS = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
+async function renderSetup() {
+  put($("#integrations"), ...Object.entries(STATUS.integrations).map(([k, on]) => h("div", { class: "row" },
+    h("strong", { text: (INTEGRATION_INFO[k] || [, , k])[2] }),
+    h("span", { class: "pill " + (on ? "good" : (k === "openai" ? "bad" : "plain")), text: on ? "Connected" : (k === "openai" ? "Required" : "Not set") }),
+    h("span", { class: "what", text: (INTEGRATION_INFO[k] || [""])[0] }), h("span", { class: "mono muted env", text: (INTEGRATION_INFO[k] || ["", ""])[1] }))));
+  const s = STATUS.schedule || {};
+  $("#scheduleText").textContent = s.enabled ? `Runs every ${DAYS[s.day] || s.day} at ${String(s.hour).padStart(2, "0")}:00 (${s.timezone}). New ideas always use the latest report.`
+    : "Off. Set WEB_SCHEDULER=true on the server to refresh research every week.";
+  const md = STATUS.models || {};
+  put($("#models"), ...[["Copy model", md.copy], ["Images", md.images], ["Fallback images", md.fallback_images]].map(([k, v]) =>
+    h("div", { class: "row" }, h("span", { text: k }), h("span", { class: "mono", text: v || "?" }))));
+  try {
+    const list = await api("api/consents");
+    put($("#consentList"), ...(list.length ? list.map(c => h("div", { class: "row" }, h("strong", { text: c.name }), h("span", { class: "pill good", text: "Consented" }),
+      h("span", { class: "what", text: `Recorded ${fmtDate(c.confirmed_at)} via ${c.confirmed_by}` }))) : [h("p", { class: "hint", text: "No clients recorded. Every person shown stays [Client Name] with a silhouette." })]));
+  } catch {}
+  try {
+    const b = await api("api/brand");
+    put($("#swatches"), ...Object.entries(b.colors).filter(([, v]) => v.startsWith("#")).map(([k, v]) =>
+      h("div", { class: "swatch" }, h("i", { style: `background:${v}` }), h("div", {}, h("div", { text: k.replace(/_/g, " ") }), h("span", { class: "mono muted", text: v })))));
+    put($("#brandRules"), ...Object.entries({ ...b.typography, ...b.components }).map(([k, v]) =>
+      h("div", { class: "row" }, h("strong", { text: k[0].toUpperCase() + k.slice(1) }), h("span", {}), h("span", { class: "what", text: v }))));
+  } catch {}
+}
+let consentAfter = null;
+function askConsent(name = "", question = "", after = null) {
+  consentAfter = after;
+  $("#consentName").value = name; $("#consentName").readOnly = !!name;
+  $("#consentQuestion").textContent = question || "Record this only for a real client who has explicitly agreed to appear in an ad as a generated, non-literal photo-realistic likeness.";
+  $("#consentPhrase").value = ""; $("#consentPhraseHint").textContent = CONSENT_PHRASE; $("#consentError").hidden = true;
+  $("#consentOverlay").hidden = false; (name ? $("#consentPhrase") : $("#consentName")).focus();
+}
+const closeConsent = () => { $("#consentOverlay").hidden = true; };
+$("#consentCancel").onclick = () => { closeConsent(); toast("Kept [Client Name] and the silhouette"); };
+$("#consentOverlay").addEventListener("keydown", e => { if (e.key === "Escape") closeConsent(); });
+$("#addConsent").onclick = () => askConsent();
+$("#consentForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  try {
+    await post("api/consent", { name: $("#consentName").value.trim(), confirmation: $("#consentPhrase").value });
+    closeConsent(); toast("Consent recorded");
+    if (!$("#view-setup").hidden) renderSetup();
+    if (consentAfter) consentAfter();
+  } catch (err) { const el = $("#consentError"); el.textContent = err.message; el.hidden = false; }
+});
+
+/* ======================================================================
+   Login + boot
+   ====================================================================== */
+function showLogin() { $("#app").hidden = true; $("#login").hidden = false; $("#loginPassword").focus(); }
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  try { await post("api/login", { password: $("#loginPassword").value }); $("#login").hidden = true; boot(); }
+  catch (err) { const el = $("#loginError"); el.textContent = err.message; el.hidden = false; }
+});
+$("#logoutBtn").onclick = async () => { try { await post("api/logout", {}); } catch {} showLogin(); };
+
+async function detectBackend() {
+  try {
+    const r = await fetch("api/session", { credentials: "same-origin" });
+    if (!r.ok || !(r.headers.get("content-type") || "").includes("json")) return null;
+    return await r.json();
+  } catch { return null; }
+}
+async function boot() {
+  const session = DEMO ? { auth_required: false, authenticated: true } : await detectBackend();
+  if (!session) DEMO = true;
+  if (session && session.auth_required && !session.authenticated) return showLogin();
+  $("#app").hidden = false;
+  $("#demoBanner").hidden = !DEMO;
+  $("#logoutBtn").hidden = !(session && session.auth_required);
+  try { STATUS = await api("api/status"); CONSENT_PHRASE = STATUS.consent_phrase || CONSENT_PHRASE; } catch {}
+  const live = !DEMO && STATUS.integrations.openai;
+  $("#connDot").className = "dot " + (DEMO ? "" : live ? "on" : "off");
+  $("#connText").textContent = DEMO ? "Preview (sample data)" : live ? "Agents connected" : "OpenAI key missing";
+  renderThemeChips();
+  await refreshConcepts();
+  setMode(store.get("mode", "idea"));
+  const view = store.get("view", "studio");
+  const last = store.get("lastJob", null);
+  if (last && !DEMO) track(last.id, last.body);
+  else if (CONCEPTS[0]) showConcept(CONCEPTS[0], null, DEMO ? SAMPLE_NOTES : []);
+  if (view !== "studio") go(view);
+}
+boot();
+</script>

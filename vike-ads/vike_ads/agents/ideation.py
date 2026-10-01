@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from ..brand import Brand
 from ..guardrails import ConsentRegistry, enforce_identity
 from ..llm import ChatClient, LLMError
+from ..progress import step
 from ..models import (DEFAULT_ASPECT, META_CTAS, AdVariant, Claim, Concept, Finding, ImageSpec,
                       ResearchReport, Source, VisualFormat, PLACEHOLDER_NAME)
 from ..store import new_id
@@ -77,6 +78,8 @@ Hard rules:
  - People in review cards / DMs are ALWAYS display_name "{PLACEHOLDER_NAME}" with a silhouette or
    illustrated avatar. Never a real or realistic personal name, never a photo-realistic face.
  - Do not name real clients. Agency results may only come from the VERIFIED AGENCY FACTS (cite F<n>).
+ - Review quotes and DM messages put words in a client's mouth: their substance must come from a
+   VERIFIED AGENCY FACT (list it in claims). Never invent a customer experience or result.
  - Trend claims may only come from the VERIFIED FINDINGS (cite finding:<n>). Invent no statistics.
    List every factual assertion in "claims" with its support; use "none" only if you truly have none
    (such claims will be fact-checked and removed if unsupported).
@@ -192,6 +195,7 @@ class IdeationAgent:
             verdict = self.checker.check(c.text, support)
             c.verified, c.note = verdict.supported, f"{verdict.method}: {verdict.note}"
             if not verdict.supported:
+                step(f"Claim not verified, sending back for a rewrite: {c.text[:80]}")
                 problems.append(f"unverified claim: \"{c.text}\" — remove it or rephrase without the factual assertion")
         return problems
 
@@ -209,6 +213,7 @@ class IdeationAgent:
     def _finalise(self, raw: dict, vid: str, label: str, origin: str, findings: list[Finding],
                   research: Optional[ResearchReport]) -> Optional[AdVariant]:
         for attempt in range(2):
+            step(f"Checking variant {label} ({origin})" if attempt == 0 else f"Re-checking variant {label}")
             v, problems = self._parse(raw, vid, label, origin)
             if v is not None and not problems:
                 problems = self._check_claims(v, findings, research)
@@ -216,6 +221,7 @@ class IdeationAgent:
                     return v
             log.info("variant %s attempt %d problems: %s", vid, attempt + 1, problems)
             if attempt == 0:
+                step(f"Fixing variant {label}: {problems[0][:90]}")
                 fixed = self._repair(raw, problems)
                 if not fixed:
                     break
@@ -228,6 +234,7 @@ class IdeationAgent:
         """One extra DeepSeek-written variant per concept (cross-checked like everything DeepSeek makes)."""
         if self.deepseek is None:
             return None
+        step("DeepSeek is writing a challenger variant")
         user = (self._user_prompt(request, 1, 1, formats, research)
                 + f"\n\nWrite ONE additional variant for the concept \"{concept_name}\" using a hook mechanism "
                   f"different from these existing variants: {[e.get('hook_mechanism') for e in existing]}.")
@@ -243,6 +250,7 @@ class IdeationAgent:
         if self.openai is None:
             raise RuntimeError("Ideation needs OPENAI_API_KEY (DeepSeek output alone can never be surfaced unverified).")
         _, findings = self._findings_block(research)
+        step(f"Writing {n_concepts} concept(s) × {n_variants} variants with OpenAI")
         data = self.openai.json(SYSTEM, self._user_prompt(request, n_concepts, n_variants, formats, research))
         concepts: list[Concept] = []
         for c in (data.get("concepts") or [])[:n_concepts]:

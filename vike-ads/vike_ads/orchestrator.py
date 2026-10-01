@@ -24,6 +24,7 @@ from .guardrails import ConsentRegistry, NeedsConfirmation
 from .images.backends import FalBackend, ImageGenerationError, ImageRouter, NanoBananaBackend
 from .images.qa import ImageQA
 from .llm import ChatClient, LLMError, OpenAIClient
+from .progress import step
 from .models import Concept, ResearchReport, VisualFormat
 from .render import concept_md, image_only_md, report_md
 from .search import GoogleCSESearch, MetaAdLibrary, OpenAIWebSearch, fetch_excerpt
@@ -124,6 +125,8 @@ class Orchestrator:
     def idea(self, request: str, *, n_concepts: int = 1, n_variants: int = 3,
              formats: list[VisualFormat] | None = None, render_images: bool = True) -> Result:
         research = self.store.latest_report()
+        step(f"Using research {research.id} ({len([f for f in research.findings if f.usable])} verified findings)"
+             if research else "No research yet, using brand context only")
         concepts = self.ideation_agent.run(request, n_concepts=n_concepts, n_variants=n_variants,
                                            formats=formats, research=research)
         notes = []
@@ -131,6 +134,7 @@ class Orchestrator:
             notes.append("No research report yet — concepts use brand context only. Run `vike-ads research` for trend input.")
         for c in concepts:
             self.store.save_concept(c)  # save copy first: parts 1-3 are never lost to an image failure
+            step(f"Saved {c.id} with {len(c.variants)} variant(s)")
             if render_images:
                 for v in c.variants:
                     try:
