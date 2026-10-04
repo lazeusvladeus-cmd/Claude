@@ -23,6 +23,7 @@ from .config import Settings
 from .guardrails import ConsentRegistry, NeedsConfirmation
 from .images.backends import FalBackend, ImageGenerationError, ImageRouter, NanoBananaBackend
 from .images.qa import ImageQA
+from .mirror import GitHubMirror
 from .llm import ChatClient, LLMError, OpenAIClient
 from .progress import step
 from .models import Concept, ResearchReport, VisualFormat
@@ -81,8 +82,9 @@ class Result:
 class Orchestrator:
     def __init__(self, settings: Settings, brand: Brand, store: Store, research: ResearchAgent,
                  ideation: IdeationAgent, image: ImageAgent, consents: ConsentRegistry,
-                 classifier: Optional[ChatClient] = None):
+                 classifier: Optional[ChatClient] = None, mirror: Optional["GitHubMirror"] = None):
         self.settings, self.brand, self.store = settings, brand, store
+        self.mirror = mirror
         self.research_agent, self.ideation_agent, self.image_agent = research, ideation, image
         self.consents, self.classifier = consents, classifier
 
@@ -178,6 +180,11 @@ def build(settings: Optional[Settings] = None) -> Orchestrator:
     store = Store(s.data_dir)
     consents = ConsentRegistry(store.consent_file)
     http = httpx.Client()
+    mirror = None
+    if s.github_store_repo and s.github_store_token:
+        mirror = GitHubMirror(s.github_store_repo, s.github_store_token, store.root)
+        n = mirror.pull()  # must finish before anything reads the data folder
+        log.info("loaded %d file(s) from GitHub storage %s", n, s.github_store_repo)
 
     openai = OpenAIClient("openai", s.openai_api_key, s.openai_base_url, s.openai_model, http) \
         if s.openai_api_key else None
@@ -205,4 +212,4 @@ def build(settings: Optional[Settings] = None) -> Orchestrator:
     qa = ImageQA(openai) if (openai is not None and s.image_qa) else None
     image = ImageAgent(brand, router, store, consents, references_dir=s.references_dir, qa=qa,
                        max_attempts=s.image_max_attempts)
-    return Orchestrator(s, brand, store, research, ideation, image, consents, classifier=openai)
+    return Orchestrator(s, brand, store, research, ideation, image, consents, classifier=openai, mirror=mirror)

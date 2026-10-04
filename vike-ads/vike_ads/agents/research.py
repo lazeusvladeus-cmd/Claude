@@ -114,7 +114,7 @@ class ResearchAgent:
             if s.url and s.url not in uniq:
                 uniq[s.url] = s
         out = list(uniq.values())[:40]
-        if self.fetcher:
+        if self.fetcher and out:
             step(f"Reading {min(len(out), 15)} source pages")
             with ThreadPoolExecutor(max_workers=6) as pool:
                 excerpts = list(pool.map(lambda s: self.fetcher(s.url) if s.kind == "web" else "", out[:15]))

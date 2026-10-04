@@ -180,6 +180,9 @@ def main(argv: list[str] | None = None) -> int:
     except (RuntimeError, ValueError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
+    finally:
+        if orch.mirror is not None and args.cmd not in {"serve", "schedule"}:
+            orch.mirror.safe_push()  # CLI runs share the hosted app's GitHub storage
     return 0
 
 

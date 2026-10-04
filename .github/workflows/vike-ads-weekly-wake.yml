@@ -1,0 +1,22 @@
+# Wakes the free-hosted Vike Ads Studio every Monday so its weekly research refresh runs
+# even when nobody opened it. Set the repo variable VIKE_ADS_URL (Settings -> Secrets and
+# variables -> Actions -> Variables), e.g. https://vike-ads-studio.onrender.com
+name: Vike Ads weekly wake-up
+
+on:
+  schedule:
+    - cron: "17 5 * * 1" # Mondays 05:17 UTC (08:17 Kyiv summer time)
+  workflow_dispatch:
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    if: ${{ vars.VIKE_ADS_URL != '' }}
+    env:
+      URL: ${{ vars.VIKE_ADS_URL }}
+    steps:
+      - name: Wake the app (it starts the weekly research if it's due)
+        run: curl -fsS --retry 6 --retry-delay 20 --retry-all-errors --max-time 120 "$URL/healthz"
+      - name: Keep it awake while research runs
+        run: |
+          for i in $(seq 1 12); do sleep 60; curl -fsS --max-time 60 "$URL/healthz" || true; done

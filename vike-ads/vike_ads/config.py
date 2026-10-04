@@ -78,6 +78,8 @@ class Settings:
     app_password: str = ""  # required whenever the dashboard is reachable beyond localhost
     app_secret: str = ""  # signs login cookies; random per process if unset
     web_scheduler: bool = False  # run the weekly research refresh inside the web process
+    github_store_repo: str = ""  # "owner/repo": keep data/ in a private GitHub repo (free hosting)
+    github_store_token: str = ""
 
     @classmethod
     def from_env(cls, env_file: Path | None = None) -> "Settings":
@@ -118,6 +120,8 @@ class Settings:
             app_password=_env("APP_PASSWORD"),
             app_secret=_env("APP_SECRET"),
             web_scheduler=_env_bool("WEB_SCHEDULER", False),
+            github_store_repo=_env("VIKE_GITHUB_STORE"),
+            github_store_token=_env("VIKE_GITHUB_TOKEN"),
         )
 
     def status(self) -> dict[str, bool]:
@@ -130,4 +134,5 @@ class Settings:
             "fal.ai (secondary images)": bool(self.fal_key),
             "google custom search": bool(self.google_cse_api_key and self.google_cse_id),
             "meta ad library api": bool(self.meta_ad_library_token),
+            "github storage": bool(self.github_store_repo and self.github_store_token),
         }

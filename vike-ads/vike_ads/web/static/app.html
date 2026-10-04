@@ -501,7 +501,7 @@ const SAMPLE_REPORT = {
   notes: [],
 };
 const SAMPLE_STATUS = {
-  integrations: { "openai": false, "deepseek": false, "gemini (primary images)": false, "fal.ai (secondary images)": false, "google custom search": false, "meta ad library api": false },
+  integrations: { "openai": false, "deepseek": false, "gemini (primary images)": false, "fal.ai (secondary images)": false, "google custom search": false, "meta ad library api": false, "github storage": false },
   consent_phrase: "yes, real client with consent",
   themes: { one_star_review: "1-star / negative-review ad format", fake_dm: "Fake DM / iMessage screenshot ads", dashboard: "Dashboard / before-after results screenshots", anti_ad: "Anti-ad / pattern-interrupt formats", authenticity: "Authenticity-over-polish shift" },
   schedule: { enabled: true, day: "mon", hour: 8, timezone: "Europe/Kyiv" },
@@ -855,6 +855,7 @@ const INTEGRATION_INFO = {
   "fal.ai (secondary images)": ["Fallback image generator", "FAL_KEY", "fal.ai"],
   "google custom search": ["Optional structured web search", "GOOGLE_CSE_API_KEY + GOOGLE_CSE_ID", "Google Custom Search"],
   "meta ad library api": ["Optional: live ads from the Meta Ad Library", "META_AD_LIBRARY_TOKEN", "Meta Ad Library"],
+  "github storage": ["Keeps research, concepts and images in a private GitHub repo, so free hosting loses nothing", "VIKE_GITHUB_STORE + VIKE_GITHUB_TOKEN", "GitHub storage"],
 };
 const DAYS = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 async function renderSetup() {

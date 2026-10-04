@@ -8,6 +8,8 @@ public interface without a password.
 from __future__ import annotations
 
 import ipaddress
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -26,6 +28,7 @@ from ..orchestrator import Orchestrator, Result
 from .auth import COOKIE, TTL, Auth
 from .jobs import JobManager
 
+log = logging.getLogger(__name__)
 STATIC = Path(__file__).parent / "static"
 CONSENT_PHRASE = "yes, real client with consent"
 PUBLIC_PATHS = {"/", "/healthz", "/api/session", "/api/login", "/api/logout"}
@@ -103,9 +106,35 @@ def _out(res: Result) -> dict:
 
 
 def create_app(orch: Orchestrator, *, auth: Optional[Auth] = None) -> FastAPI:
-    app = FastAPI(title="Vike Ads", docs_url=None, redoc_url=None, openapi_url=None)
     auth = auth or Auth(orch.settings.app_password, orch.settings.app_secret)
     jobs = JobManager()
+    mirror = orch.mirror
+
+    def synced(fn):
+        """Run fn, then commit new files to GitHub storage (free hosts wipe their disk)."""
+        def run():
+            try:
+                return fn()
+            finally:
+                if mirror is not None:
+                    mirror.safe_push()
+        return run
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        if mirror is not None:
+            mirror.start(interval=60)
+        if orch.settings.web_scheduler:
+            from ..scheduler import research_is_due
+            if research_is_due(orch):
+                log.info("weekly research is due (host may have been asleep): starting it now")
+                jobs.submit("research", "Weekly research (catch-up)",
+                            synced(lambda: _out(orch.research(orch.settings.weekly_research_topic))))
+        yield
+        if mirror is not None:
+            mirror.stop()
+
+    app = FastAPI(title="Vike Ads", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 
     @app.middleware("http")
     async def require_login(request: Request, call_next):
@@ -205,9 +234,12 @@ def create_app(orch: Orchestrator, *, auth: Optional[Auth] = None) -> FastAPI:
         if body.confirmation.strip().lower() != CONSENT_PHRASE:
             raise HTTPException(400, f"Not confirmed. {consent_question(body.name)}")
         try:
-            return orch.consents.confirm(body.name, confirmed_by="dashboard", note="confirmed in dashboard")
+            rec = orch.consents.confirm(body.name, confirmed_by="dashboard", note="confirmed in dashboard")
         except ValueError as e:
             raise HTTPException(400, str(e))
+        if mirror is not None:
+            mirror.safe_push()
+        return rec
 
     # ---------------------------------------------------------------- background jobs
     @app.post("/api/jobs")
@@ -225,7 +257,7 @@ def create_app(orch: Orchestrator, *, auth: Optional[Auth] = None) -> FastAPI:
                                         render_images=body.render_images))
         else:
             fn = lambda: _out(orch.image(text, photoreal_name=body.photoreal_name, backend=body.backend))  # noqa: E731
-        return jobs.submit(body.action, text or "Ad creative trends", fn).public()
+        return jobs.submit(body.action, text or "Ad creative trends", synced(fn)).public()
 
     @app.get("/api/jobs")
     def list_jobs():
@@ -259,7 +291,11 @@ def create_app(orch: Orchestrator, *, auth: Optional[Auth] = None) -> FastAPI:
     @app.get("/images/{name}")
     def images(name: str):
         path = (orch.store.images_dir / name).resolve()
-        if path.parent != orch.store.images_dir.resolve() or not path.is_file():
+        if path.parent != orch.store.images_dir.resolve():
+            raise HTTPException(404)
+        if not path.is_file() and mirror is not None:
+            mirror.fetch(f"images/{name}")  # lazily restore images after a free-tier restart
+        if not path.is_file():
             raise HTTPException(404)
         return FileResponse(path, headers={"Cache-Control": "private, max-age=86400"})
 

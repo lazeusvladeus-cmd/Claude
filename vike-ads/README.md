@@ -85,28 +85,53 @@ python -m vike_ads doctor   # shows which integrations are live
 
 **Reference images:** save your three reference ads' assets as PNG/JPG in `references/dashboard/`, `references/review_card/` and `references/dm_screenshot/`. They are sent as *style references* only. They're gitignored, so client material never gets committed.
 
-## Hosting it (Render, about 10 minutes)
+## Hosting it for free (Render free plan + a private GitHub repo)
 
-The repo includes a Render Blueprint (`render.yaml` at the repo root) and a `vike-ads/Dockerfile`.
+Total cost: $0 for hosting. You still pay the AI providers for what you use.
 
-1. Merge this branch into `main` first, or pick the branch when Render asks for one.
-2. Sign in at <https://dashboard.render.com>. Choose **New → Blueprint** and connect the `lazeusvladeus-cmd/Claude` repo.
-3. Render reads `render.yaml` and asks for each secret. Enter:
-   - `APP_PASSWORD`: the password your team types to sign in. Required: the server refuses to run publicly without one.
-   - `OPENAI_API_KEY`: required.
-   - `GEMINI_API_KEY`, `FAL_KEY`, `DEEPSEEK_API_KEY`: if Render won't accept a blank, delete that variable after the first deploy.
-4. Click **Apply**. You get a URL like `https://vike-ads-studio.onrender.com`. Open it and sign in.
+Render's free plan has two catches. The app sleeps after 15 minutes without visitors, so the first visit after a break takes about a minute. And **its disk is wiped every time it sleeps**. To get around the wipe, the app keeps its data in a private GitHub repo:
+- It saves research, concepts, images and consent records there after every run.
+- On wake-up it reloads the research, concepts and consent records, and fetches images only when they're viewed.
 
-What it costs and why:
-- The service needs a **paid instance (Starter, about $7/month) because of the 1 GB persistent disk**. The disk keeps research, concepts, images and consent records across deploys. Without a disk, everything resets on each deploy.
-- The **weekly research refresh** runs inside the web service (`WEB_SCHEDULER=true`) every Monday at 08:00 Kyiv time.
-- Keys stay in Render's environment settings and never reach the browser. Every API call and image needs a signed login cookie, and failed logins are throttled.
-- Long runs happen as **background jobs** that the dashboard polls, so a 2–3 minute run doesn't hit a proxy timeout.
+**1. Create the storage repo and a token (2 minutes)**
+1. On GitHub, create a new **private** repo, e.g. `vike-ads-data`. Leave it empty.
+2. Go to **Settings → Developer settings → Fine-grained personal access tokens → Generate new token**.
+3. Under Repository access, choose **Only select repositories → vike-ads-data**.
+4. Under Permissions → Repository permissions, set **Contents → Read and write**. Generate the token and copy it.
 
-To use another host instead (Railway, Fly.io, a VPS with Docker):
+**2. Deploy (5 minutes)**
+1. Merge this branch into `main`, or pick the branch when Render asks.
+2. Go to <https://dashboard.render.com>, choose **New → Blueprint**, and pick the `lazeusvladeus-cmd/Claude` repo. `render.yaml` already selects the free plan.
+3. Fill in the values Render asks for:
+   - `APP_PASSWORD`: the team sign-in password.
+   - `OPENAI_API_KEY`
+   - `GEMINI_API_KEY`
+   - `VIKE_GITHUB_STORE`: e.g. `your-github-name/vike-ads-data`
+   - `VIKE_GITHUB_TOKEN`: the token from step 1.
+   - `FAL_KEY` and `DEEPSEEK_API_KEY` are optional. If Render won't accept a blank, delete them after the first deploy.
+4. Click **Apply**. Your URL looks like `https://vike-ads-studio.onrender.com`.
+
+**3. Weekly research while nobody's looking (1 minute)**
+A sleeping server can't run its Monday research.
+- When the app wakes up, it runs any missed research automatically.
+- To have research waiting for you on Monday mornings, wake it up on schedule: in this GitHub repo go to **Settings → Secrets and variables → Actions → Variables** and add `VIKE_ADS_URL` set to your Render URL. The included workflow `.github/workflows/vike-ads-weekly-wake.yml` then wakes the app every Monday. GitHub Actions is free for this.
+
+Other free options:
+- **Your own computer:** run `python -m vike_ads serve` and open <http://127.0.0.1:8765>. It's always free, but it only works while that computer is on.
+
+**Paid upgrade (about $7/month)** removes the 1-minute wake-up wait:
+1. In `render.yaml`, set `plan: starter` and add the disk block shown in its comments.
+2. Drop the GitHub variables.
+
+Security:
+- Keys stay in Render's environment settings and never reach the browser.
+- Every API call and image needs a signed login cookie, and failed logins are throttled.
+- Long runs happen as background jobs, so they don't hit proxy timeouts.
+
+Other Docker hosts (Railway, Fly.io, a VPS):
 1. Build `vike-ads/Dockerfile`.
-2. Mount a volume at `/var/data`.
-3. Set `APP_PASSWORD` plus your keys, and expose port 8765 (or set `PORT`).
+2. Either mount a volume at `/var/data` or set the GitHub storage variables.
+3. Set `APP_PASSWORD` plus your keys.
 
 ## Usage
 
