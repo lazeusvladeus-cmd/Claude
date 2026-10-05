@@ -105,6 +105,12 @@ class ResearchAgent:
                     sources.extend(self.ad_library.search(terms, n=5))
                 except Exception as e:
                     notes.append(f"Meta Ad Library API query '{terms}' failed: {e}")
+        # Collapse repeated identical failures (e.g. a bad key fails every search the same way).
+        fails = [n for n in notes if n.startswith("search failed for")]
+        if len(fails) > 1:
+            reasons = {n.split("': ", 1)[-1] for n in fails}
+            if len(reasons) == 1:
+                notes[:] = [n for n in notes if n not in fails] + [f"All {len(fails)} web searches failed: {reasons.pop()}"]
         manual = [MetaAdLibrary.manual_link(TREND_THEMES[t]["ad_library_terms"], c)
                   for t in themes for c in self.countries[:1]]
 

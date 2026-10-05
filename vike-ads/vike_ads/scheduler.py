@@ -26,7 +26,7 @@ def research_is_due(orch: Orchestrator, max_age_days: float = 7) -> bool:
     process checks this when it starts and catches up.
     """
     from datetime import datetime, timezone
-    latest = orch.store.latest_report()
+    latest = orch.store.latest_report(with_findings=True)  # a failed run must not count
     if latest is None:
         return True
     return (datetime.now(timezone.utc) - latest.created_at).total_seconds() > max_age_days * 86400

@@ -53,8 +53,11 @@ class Store:
         p = self.root / "research" / f"{rid}.json"
         return ResearchReport.model_validate_json(p.read_text(encoding="utf-8")) if p.exists() else None
 
-    def latest_report(self) -> Optional[ResearchReport]:
+    def latest_report(self, with_findings: bool = False) -> Optional[ResearchReport]:
+        """Newest report; with_findings=True skips runs that produced nothing (e.g. a bad API key)."""
         reports = self.list_reports()
+        if with_findings:
+            reports = [r for r in reports if any(f.usable for f in r.findings)]
         return reports[0] if reports else None
 
     # ---- concepts

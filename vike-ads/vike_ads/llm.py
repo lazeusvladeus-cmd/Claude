@@ -17,6 +17,21 @@ log = logging.getLogger(__name__)
 
 RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}
 
+# Which setting holds the key for each API host, so auth errors say what to fix.
+KEY_SETTING = {
+    "api.openai.com": ("OpenAI", "OPENAI_API_KEY"),
+    "api.deepseek.com": ("DeepSeek", "DEEPSEEK_API_KEY"),
+    "generativelanguage.googleapis.com": ("Gemini", "GEMINI_API_KEY"),
+    "fal.run": ("fal.ai", "FAL_KEY"),
+}
+
+
+def _auth_hint(url: str, status: int, body: str) -> str:
+    host = httpx.URL(url).host
+    name, var = KEY_SETTING.get(host, (host, "the API key"))
+    return (f"{name} rejected the API key (HTTP {status}). Check {var} in your hosting settings "
+            f"(Render: the service's Environment tab). Provider said: {body[:200]}")
+
 
 class LLMError(RuntimeError):
     pass
@@ -34,6 +49,8 @@ def post_json(client: httpx.Client, url: str, *, headers: dict, payload: dict,
         else:
             if r.status_code < 400:
                 return r.json()
+            if r.status_code in (401, 403) and httpx.URL(url).host in KEY_SETTING:
+                raise LLMError(_auth_hint(url, r.status_code, r.text))
             last = f"HTTP {r.status_code}: {r.text[:500]}"
             if r.status_code not in RETRY_STATUS:
                 break

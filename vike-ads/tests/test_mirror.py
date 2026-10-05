@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from conftest import PNG, FakeChat, FakeWeb, good_variant, make_orch
 from vike_ads.mirror import GitHubMirror, git_blob_sha
-from vike_ads.models import ResearchReport
+from vike_ads.models import Finding, ResearchReport
 from vike_ads.store import Store
 from vike_ads.web.server import create_app
 
@@ -116,7 +116,9 @@ def test_catch_up_research_runs_when_a_week_was_missed(brand, store, consents):
     assert research_is_due(orch)
     store.save_report(ResearchReport(id="r-old", topic="t", created_at=datetime.now(timezone.utc) - timedelta(days=8)))
     assert research_is_due(orch)
-    store.save_report(ResearchReport(id="r-new", topic="t"))
+    store.save_report(ResearchReport(id="r-failed", topic="t"))  # e.g. a bad API key: no findings
+    assert research_is_due(orch)  # a failed run doesn't count as this week's research
+    store.save_report(ResearchReport(id="r-new", topic="t", findings=[Finding(trend="x", summary="y", source_ids=["S1"])]))
     assert not research_is_due(orch)
 
 

@@ -124,6 +124,21 @@ class Settings:
             github_store_token=_env("VIKE_GITHUB_TOKEN"),
         )
 
+    def key_warnings(self) -> dict[str, str]:
+        """Keys that are set but obviously the wrong kind of value (keyed like status())."""
+        w: dict[str, str] = {}
+        k = self.openai_api_key
+        if k and not k.startswith("sk-"):
+            w["openai"] = ("This isn't an OpenAI API key. Keys start with sk- (an org- value is your "
+                           "organization ID). Create one at platform.openai.com/api-keys.")
+        if self.deepseek_api_key and not self.deepseek_api_key.startswith("sk-"):
+            w["deepseek"] = "DeepSeek API keys start with sk-."
+        if self.gemini_api_key and self.google_image_backend != "vertex" and not self.gemini_api_key.startswith("AIza"):
+            w["gemini (primary images)"] = "Google AI Studio API keys usually start with AIza. Check you copied the key itself."
+        if self.github_store_repo and (self.github_store_repo.startswith("http") or self.github_store_repo.endswith(".git")):
+            w["github storage"] = "Use owner/repo, e.g. lazeusvladeus-cmd/vike-ads-data, not the full URL."
+        return w
+
     def status(self) -> dict[str, bool]:
         """Which integrations are configured (never exposes key values)."""
         return {
