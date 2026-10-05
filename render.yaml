@@ -1,0 +1,55 @@
+# Render Blueprint for Vike Ads Studio (vike-ads/), on Render's FREE plan.
+# Render dashboard -> New -> Blueprint -> pick this repo. It asks for every `sync: false` value.
+#
+# Free plan notes:
+#  - The service sleeps after 15 minutes without visitors; the next visit takes about a minute to wake it.
+#  - Its disk is wiped whenever it sleeps, so data lives in a private GitHub repo instead
+#    (VIKE_GITHUB_STORE + VIKE_GITHUB_TOKEN). Nothing is lost.
+#  - To upgrade later: set `plan: starter`, add the disk block below, and remove the GitHub variables.
+#      disk:
+#        name: vike-data
+#        mountPath: /var/data
+#        sizeGB: 1
+services:
+  - type: web
+    name: vike-ads-studio
+    runtime: docker
+    plan: free
+    dockerfilePath: ./vike-ads/Dockerfile
+    dockerContext: ./vike-ads
+    region: frankfurt
+    healthCheckPath: /healthz
+    buildFilter:
+      paths:
+        - vike-ads/**
+    envVars:
+      - key: APP_PASSWORD # the password your team types to sign in
+        sync: false
+      - key: APP_SECRET # signs login cookies
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FAL_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: VIKE_GITHUB_STORE # private repo that holds research, concepts, images, e.g. you/vike-ads-data
+        sync: false
+      - key: VIKE_GITHUB_TOKEN # fine-grained token with Contents read/write on that one repo
+        sync: false
+      # Optional, add later in the service's Environment tab: META_AD_LIBRARY_TOKEN,
+      # GOOGLE_CSE_API_KEY, GOOGLE_CSE_ID.
+      - key: OPENAI_MODEL
+        value: gpt-5
+      - key: GEMINI_IMAGE_MODEL
+        value: gemini-3-pro-image-preview
+      - key: WEB_SCHEDULER # weekly research; catches up on wake if the server slept through it
+        value: "true"
+      - key: WEEKLY_RESEARCH_DAY
+        value: mon
+      - key: WEEKLY_RESEARCH_HOUR
+        value: "8"
+      - key: TIMEZONE
+        value: Europe/Kyiv
