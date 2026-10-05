@@ -126,7 +126,7 @@ class Orchestrator:
 
     def idea(self, request: str, *, n_concepts: int = 1, n_variants: int = 3,
              formats: list[VisualFormat] | None = None, render_images: bool = True) -> Result:
-        research = self.store.latest_report()
+        research = self.store.latest_report(with_findings=True)
         step(f"Using research {research.id} ({len([f for f in research.findings if f.usable])} verified findings)"
              if research else "No research yet, using brand context only")
         concepts = self.ideation_agent.run(request, n_concepts=n_concepts, n_variants=n_variants,

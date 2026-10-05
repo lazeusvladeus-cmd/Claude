@@ -192,6 +192,7 @@ def create_app(orch: Orchestrator, *, auth: Optional[Auth] = None) -> FastAPI:
         return {
             "version": __version__,
             "integrations": s.status(),
+            "warnings": s.key_warnings(),
             "consent_phrase": CONSENT_PHRASE,
             "themes": {k: v["label"] for k, v in TREND_THEMES.items()},
             "schedule": {"enabled": s.web_scheduler, "day": s.weekly_research_day,
@@ -323,6 +324,8 @@ def serve(orch: Orchestrator, *, host: str, port: int, with_scheduler: bool = Fa
         from ..scheduler import make_scheduler
         sched = make_scheduler(orch, blocking=False)
         sched.start()
+    for name, msg in orch.settings.key_warnings().items():
+        print(f"WARNING {name}: {msg}")
     print(f"Vike Ads Studio: http://{host}:{port}" + ("  (password required)" if orch.settings.app_password else ""))
     try:
         uvicorn.run(create_app(orch), host=host, port=port, log_level="warning", proxy_headers=True,

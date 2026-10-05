@@ -859,10 +859,14 @@ const INTEGRATION_INFO = {
 };
 const DAYS = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 async function renderSetup() {
+  const warn = STATUS.warnings || {};
   put($("#integrations"), ...Object.entries(STATUS.integrations).map(([k, on]) => h("div", { class: "row" },
     h("strong", { text: (INTEGRATION_INFO[k] || [, , k])[2] }),
-    h("span", { class: "pill " + (on ? "good" : (k === "openai" ? "bad" : "plain")), text: on ? "Connected" : (k === "openai" ? "Required" : "Not set") }),
-    h("span", { class: "what", text: (INTEGRATION_INFO[k] || [""])[0] }), h("span", { class: "mono muted env", text: (INTEGRATION_INFO[k] || ["", ""])[1] }))));
+    warn[k] ? h("span", { class: "pill warn", text: "Check key" })
+      : h("span", { class: "pill " + (on ? "good" : (k === "openai" ? "bad" : "plain")), text: on ? "Set" : (k === "openai" ? "Required" : "Not set") }),
+    h("span", { class: "what", text: (INTEGRATION_INFO[k] || [""])[0] }),
+    warn[k] ? h("span", { class: "what", style: "color:var(--warn)", text: warn[k] }) : null,
+    h("span", { class: "mono muted env", text: (INTEGRATION_INFO[k] || ["", ""])[1] }))));
   const s = STATUS.schedule || {};
   $("#scheduleText").textContent = s.enabled ? `Runs every ${DAYS[s.day] || s.day} at ${String(s.hour).padStart(2, "0")}:00 (${s.timezone}). New ideas always use the latest report.`
     : "Off. Set WEB_SCHEDULER=true on the server to refresh research every week.";
@@ -930,9 +934,10 @@ async function boot() {
   $("#demoBanner").hidden = !DEMO;
   $("#logoutBtn").hidden = !(session && session.auth_required);
   try { STATUS = await api("api/status"); CONSENT_PHRASE = STATUS.consent_phrase || CONSENT_PHRASE; } catch {}
-  const live = !DEMO && STATUS.integrations.openai;
+  const badKey = !DEMO && (STATUS.warnings || {}).openai;
+  const live = !DEMO && STATUS.integrations.openai && !badKey;
   $("#connDot").className = "dot " + (DEMO ? "" : live ? "on" : "off");
-  $("#connText").textContent = DEMO ? "Preview (sample data)" : live ? "Agents connected" : "OpenAI key missing";
+  $("#connText").textContent = DEMO ? "Preview (sample data)" : badKey ? "OpenAI key looks wrong" : live ? "Keys set" : "OpenAI key missing";
   renderThemeChips();
   await refreshConcepts();
   setMode(store.get("mode", "idea"));
