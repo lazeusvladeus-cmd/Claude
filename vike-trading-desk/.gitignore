@@ -1,0 +1,12 @@
+# Your private data stays on your PC (never uploaded to GitHub)
+/journal/
+/data/cache/
+/config.toml
+/data/economic_events_manual.csv
+/.streamlit/secrets.toml
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

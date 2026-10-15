@@ -1,0 +1,10 @@
+[browser]
+gatherUsageStats = false
+
+[server]
+# Only this computer can open the app (nobody else on your Wi-Fi).
+address = "localhost"
+port = 8501
+
+[client]
+toolbarMode = "minimal"

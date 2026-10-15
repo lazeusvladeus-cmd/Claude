@@ -1,0 +1,116 @@
+# ==========================================================================
+#  VIKE TRADING DESK  -  YOUR SETTINGS
+# --------------------------------------------------------------------------
+#  config.example.toml is the TEMPLATE. On first start the app copies it to
+#  config.toml - that copy is YOURS: edit config.toml, not the template.
+#  (App updates never overwrite your config.toml.)
+#
+#  How to edit:  right-click config.toml -> "Open with" -> Notepad.
+#  After saving, go back to the app in your browser and press  R
+#  (or F5 / the "Rerun" button) to load the new settings.
+#
+#  Rules so nothing breaks:
+#    - Text goes in "double quotes".          name = "Vike"
+#    - Yes/no settings are true or false.     enabled = true
+#    - Numbers have no quotes.                value_area_percent = 70
+#    - Lists go in [square brackets].         impact_levels = ["High", "Medium"]
+#    - Anything after a # is a comment and is ignored.
+#  If you make a typo, the app shows you which line to fix.
+# ==========================================================================
+
+
+[you]
+name = "Vike"
+home_timezone = "Europe/Kyiv"          # your clock
+home_label = "Kyiv"                    # short name shown next to your times
+market_timezone = "America/New_York"   # the exchange clock (leave as is)
+market_label = "NY"
+shift_start = "15:00"                  # your work shift, in YOUR time -
+shift_end = "23:00"                    # the prep sheet must be ready before shift_start
+
+
+# ---------------- Futures you prepare for (Tab 1) ----------------
+# Each [instruments.XX] block is one futures market.
+# enabled = false hides it. The first enabled one is your main market.
+# Your ATAS/broker shows the same markets with a contract month, e.g. NQZ26.
+
+[instruments.NQ]
+enabled = true
+name = "E-mini Nasdaq-100"
+yahoo_symbol = "NQ=F"      # Yahoo Finance ticker (front-month contract)
+cme_root = "NQ"            # used to show the contract code, e.g. NQZ26
+tick_size = 0.25           # smallest price step, in points
+point_value_usd = 20       # $ per 1.00 point per contract (so 1 tick = $5)
+
+[instruments.ES]
+enabled = true
+name = "E-mini S&P 500"
+yahoo_symbol = "ES=F"
+cme_root = "ES"
+tick_size = 0.25
+point_value_usd = 50       # 1 tick = $12.50
+
+
+# ---------------- Session times (New York time) ----------------
+# Standard for NQ/ES: regular trading hours (RTH) 09:30-16:00 New York.
+# Globex (electronic, nearly 24h) reopens every evening at 18:00 New York.
+[sessions]
+rth_start = "09:30"
+rth_end = "16:00"
+globex_start = "18:00"
+# "Overnight" high/low = everything traded from this time on the prior day
+# until today's 09:30 open. "16:00" = since yesterday's close (default).
+# Use "18:00" if you only want the new Globex session.
+overnight_start = "16:00"
+
+
+# ---------------- Which levels appear on the prep sheet ----------------
+[levels]
+prior_day_high_low_close = true
+prior_day_vwap = true
+overnight_high_low = true
+value_area = true              # VAH / VAL / POC from the prior day's volume profile
+weekly_high_low = true         # this week so far + last week
+naked_pocs = true              # older POCs that price has NOT traded back to yet
+gap = true
+value_area_percent = 70        # 70 is the standard
+naked_poc_lookback_days = 20   # how many past sessions to scan for naked POCs
+naked_poc_max_shown = 5        # show only the N closest to the current price
+
+
+# ---------------- Chart ----------------
+[chart]
+sessions_to_show = 3           # how many recent sessions on the chart
+bar_minutes = 5                # candle size: 5, 15 or 30
+show_volume_profile = true     # prior day's volume profile next to the candles
+
+
+# ---------------- Economic calendar ----------------
+[economic_calendar]
+use_free_online_feed = true    # free ForexFactory weekly feed. false = manual events only
+countries = ["USD"]            # add "EUR", "CNY" ... if you want more
+impact_levels = ["High"]       # add "Medium" to also see medium-impact events
+refresh_every_hours = 4        # the free feed asks users not to download it too often
+
+
+# ---------------- Risk defaults (pre-filled in your daily checklist) ----------------
+[risk]
+max_daily_loss_usd = 500
+max_trades_per_day = 3
+risk_per_trade_usd = 150
+
+
+# ---------------- Journal ----------------
+[journal]
+# Where each day's prep sheet, notes and review are saved.
+# "journal" = a folder next to this file. You can use a full path, but use
+# forward slashes, e.g.  folder = "C:/Users/Vike/Documents/TradingJournal"
+folder = "journal"
+
+
+# ---------------- Equity research (Tab 2 - arrives in Phase 3) ----------------
+# US-listed companies that file 10-K reports with the SEC.
+[coverage]
+quality = ["MSFT"]
+banks = ["JPM"]
+ad_driven = ["META"]

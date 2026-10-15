@@ -1,0 +1,40 @@
+"""Vike Trading Desk. Start it with start.bat (Windows), or: streamlit run app.py"""
+from pathlib import Path
+
+import streamlit as st
+
+from desk import ui_prep
+from desk.config import ConfigError, ensure_user_config, load_config
+
+APP_DIR = Path(__file__).resolve().parent
+
+st.set_page_config(page_title="Vike Trading Desk", page_icon="📈", layout="wide")
+
+try:
+    cfg = load_config(ensure_user_config(APP_DIR))
+except ConfigError as exc:
+    st.error(f"**Your settings file needs a fix.** {exc}")
+    st.info("Open config.toml with Notepad, fix the line mentioned above, save, then press R in this browser tab.")
+    st.stop()
+
+st.title("📈 Vike Trading Desk")
+tab_prep, tab_research, tab_learn = st.tabs(["📋 Pre-Session Prep", "📊 Equity Research", "🎓 Learning Roadmap"])
+
+with tab_prep:
+    ui_prep.render(cfg)
+
+with tab_research:
+    st.info(
+        "**Coming in Phase 3.** Tear sheets from SEC EDGAR data (revenue, margins, FCF, ROIC, debt, share count, "
+        "5-10 year trends), valuation multiples, a DCF with sensitivity, bank-specific metrics, ad-business KPIs, "
+        "notes per company and a side-by-side comparison."
+    )
+    coverage = " · ".join(f"{group.replace('_', ' ')}: {', '.join(tickers)}" for group, tickers in cfg.coverage.items() if tickers)
+    st.caption(f"Your coverage list (from config.toml): {coverage or 'empty'}")
+
+with tab_learn:
+    st.info(
+        "**Coming in Phase 2.** Your learning roadmap: modules from futures basics to Context → Location → "
+        "Confirmation and coded backtesting, mapped to weeks 1-12, with verified resource links and progress "
+        "checkboxes that save."
+    )
