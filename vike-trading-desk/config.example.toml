@@ -108,9 +108,20 @@ risk_per_trade_usd = 150
 folder = "journal"
 
 
-# ---------------- Equity research (Tab 2 - arrives in Phase 3) ----------------
-# US-listed companies that file 10-K reports with the SEC.
+# ---------------- Equity research (Tab 2) ----------------
+# Your coverage list: US-listed companies that file 10-K reports with the SEC.
+# Put each ticker in the right group - banks get bank metrics instead of a DCF,
+# ad_driven companies get the ad KPI tracker.
 [coverage]
 quality = ["MSFT"]
 banks = ["JPM"]
 ad_driven = ["META"]
+
+[research]
+# The SEC asks everyone using its free data to identify themselves with a
+# name and email (it's sent only to sec.gov). Example: "Vike Petrenko vike@gmail.com"
+# Leave it empty to type it once inside the app instead.
+sec_user_agent = ""
+default_discount_rate = 9.0      # % - starting point for the DCF slider
+default_terminal_growth = 2.5    # % - growth after year 10
+bank_cost_of_equity = 10.0       # % - starting point for the bank P/B model

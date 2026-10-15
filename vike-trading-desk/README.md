@@ -6,9 +6,9 @@ can see it.
 | Tab | What it does | Status |
 |---|---|---|
 | 📋 Pre-Session Prep | NQ / ES levels, economic events, chart, Context → Location → Confirmation checklist, PDF/PNG export, journal & session review | ✅ Phase 1 |
-| 🎓 Learning Roadmap | Your weeks 1-12 learning path with verified links and progress checkboxes | Phase 2 |
-| 📊 Equity Research | SEC fundamentals, tear sheets, DCF, bank metrics, ad KPIs, comparisons | Phase 3 |
-| ✨ Polish | Dark-mode switch, nicer PDF, final README | Phase 4 |
+| 🎓 Learning Roadmap | Your weeks 1-12 learning path with verified links and progress checkboxes | ✅ Phase 2 |
+| 📊 Equity Research | SEC fundamentals, tear sheets, DCF, bank metrics, ad KPIs, comparisons | ✅ Phase 3 |
+| ✨ Polish | Dark mode by default (switch in ⋮ → Settings → Theme), PDF prep sheet | ✅ Phase 4 |
 
 ---
 
@@ -224,3 +224,37 @@ vike-trading-desk/
 ```
 
 Running the checks (optional): `.venv\Scripts\python -m pip install pytest` then `.venv\Scripts\python -m pytest`.
+
+---
+
+## 10. Equity Research tab (Tab 2)
+
+1. **First time:** the tab asks for your **name and email**. The SEC requires this for its free data API; it's sent
+   only to sec.gov and saved in `data/sec_contact.txt` (or set `sec_user_agent` in `config.toml`).
+2. Pick a company from your coverage list (`[coverage]` in `config.toml`: quality / banks / ad_driven) or type any
+   US ticker.
+3. **Tear sheet:** 10 years of revenue, margins, FCF, ROIC, debt, cash, share count (from 10-K XBRL data), TTM figures
+   (last fiscal year + this year-to-date - last year-to-date) and multiples (P/E, EV/EBIT, FCF yield) with Yahoo prices.
+4. **Valuation:** DCF sliders (growth, target margin, discount rate, terminal growth + advanced), a sensitivity
+   chart (which assumption matters most), a discount-rate × terminal-growth table, and a **reverse DCF** (growth priced
+   in). Banks get **justified P/B = (ROE - g) / (r - g)** instead, because a DCF doesn't fit banks.
+5. **Banks** show P/B, P/TBV, ROE, ROTCE, efficiency ratio, NII / average assets (approximate NIM), loan growth,
+   provisions and net charge-offs. CET1 is taken from the SEC data when the bank tags it; otherwise type the reported
+   figure (and NIM) from the 10-K into the boxes under the table.
+6. **KPIs:** a tracker for ad metrics (ad revenue, daily active users/people, ARPU/ARPP, ad impressions growth,
+   price per ad growth). These live in earnings releases, not in SEC data - type them in from Meta's IR site. The
+   tear sheet also reads **advertising revenue** and segment revenue from the latest 10-K when available.
+7. **Notes:** thesis, risks, catalysts, valuation notes - saved per company in `data/research/`.
+8. **Compare:** 2-3 companies side by side (table + revenue and ROE charts).
+
+Honest limits: XBRL tags differ between companies, so a few fields can be empty for some companies (shown as "-").
+Always check key numbers against the 10-K.
+
+## 11. Learning Roadmap tab (Tab 3)
+
+- 12 trading modules + 5 equity modules, each with what to learn, why it matters for your Context → Location →
+  Confirmation strategy, a practical exercise and 2-4 resource links (all checked on 15 Oct 2026).
+- Set the date your week 1 starts; the tab shows what to study this week and the full week 1-12 plan.
+- Tick links, exercises and modules as you go, and write notes - saved in `data/learning_progress.json`.
+- Add your own links in the tab, or edit `learning/my_links.csv` with Excel/Notepad. Module texts are in
+  `learning/roadmap.toml`.

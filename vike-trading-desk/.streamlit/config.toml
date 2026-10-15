@@ -8,3 +8,7 @@ port = 8501
 
 [client]
 toolbarMode = "minimal"
+
+[theme]
+# Dark mode by default. Switch any time: menu (top right, ⋮) -> Settings -> Theme.
+base = "dark"

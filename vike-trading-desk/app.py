@@ -3,7 +3,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from desk import ui_learning, ui_prep
+from desk import ui_learning, ui_prep, ui_research
 from desk.config import ConfigError, ensure_user_config, load_config
 
 APP_DIR = Path(__file__).resolve().parent
@@ -24,13 +24,7 @@ with tab_prep:
     ui_prep.render(cfg)
 
 with tab_research:
-    st.info(
-        "**Coming in Phase 3.** Tear sheets from SEC EDGAR data (revenue, margins, FCF, ROIC, debt, share count, "
-        "5-10 year trends), valuation multiples, a DCF with sensitivity, bank-specific metrics, ad-business KPIs, "
-        "notes per company and a side-by-side comparison."
-    )
-    coverage = " · ".join(f"{group.replace('_', ' ')}: {', '.join(tickers)}" for group, tickers in cfg.coverage.items() if tickers)
-    st.caption(f"Your coverage list (from config.toml): {coverage or 'empty'}")
+    ui_research.render(cfg)
 
 with tab_learn:
     ui_learning.render(cfg)

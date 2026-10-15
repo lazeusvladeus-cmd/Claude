@@ -81,6 +81,14 @@ class RiskSettings:
 
 
 @dataclass(frozen=True)
+class ResearchSettings:
+    sec_user_agent: str
+    discount_rate: float
+    terminal_growth: float
+    bank_cost_of_equity: float
+
+
+@dataclass(frozen=True)
 class Config:
     app_dir: Path
     you: You
@@ -92,6 +100,7 @@ class Config:
     risk: RiskSettings
     journal_dir: Path
     coverage: dict[str, list[str]] = field(default_factory=dict)
+    research: ResearchSettings = ResearchSettings("", 9.0, 2.5, 10.0)
 
     @property
     def enabled_instruments(self) -> list[Instrument]:
@@ -287,6 +296,14 @@ def load_config(path: Path) -> Config:
     s = _Section(data, "coverage")
     coverage = {key: [t.upper() for t in s.str_list(key, [])] for key in s.raw}
 
+    s = _Section(data, "research")
+    research = ResearchSettings(
+        sec_user_agent=s.get("sec_user_agent", "", str).strip(),
+        discount_rate=s.get("default_discount_rate", 9.0, float),
+        terminal_growth=s.get("default_terminal_growth", 2.5, float),
+        bank_cost_of_equity=s.get("bank_cost_of_equity", 10.0, float),
+    )
+
     return Config(
         app_dir=app_dir,
         you=you,
@@ -298,4 +315,5 @@ def load_config(path: Path) -> Config:
         risk=risk,
         journal_dir=journal_dir,
         coverage=coverage,
+        research=research,
     )

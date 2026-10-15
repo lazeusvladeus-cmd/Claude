@@ -161,3 +161,21 @@ def load_bars(
         downloaded_at=pd.Timestamp.now(tz=market_tz),
         problems=problems,
     )
+
+
+def stock_prices(ticker: str, downloader: Callable | None = None) -> tuple[float | None, pd.Series, str]:
+    """Latest price and ~10 years of month-end closes for a stock (Yahoo Finance)."""
+    try:
+        if downloader is None:
+            import yfinance as yf
+
+            hist = yf.Ticker(ticker).history(period="10y", interval="1mo", auto_adjust=False, actions=False, raise_errors=True)
+            last = yf.Ticker(ticker).history(period="5d", interval="1d", auto_adjust=False, actions=False, raise_errors=True)
+        else:
+            hist, last = downloader(ticker)
+        monthly = hist["Close"].dropna()
+        monthly.index = pd.DatetimeIndex(monthly.index).tz_localize(None) if pd.DatetimeIndex(monthly.index).tz else pd.DatetimeIndex(monthly.index)
+        price = float(last["Close"].dropna().iloc[-1]) if not last.empty else (float(monthly.iloc[-1]) if len(monthly) else None)
+        return price, monthly, ""
+    except Exception as exc:
+        return None, pd.Series(dtype=float), friendly_error(exc, ticker, "price")
