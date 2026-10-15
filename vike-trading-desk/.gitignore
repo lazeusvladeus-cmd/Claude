@@ -3,6 +3,9 @@
 /data/cache/
 /config.toml
 /data/economic_events_manual.csv
+/data/learning_progress.json
+/data/research/
+/learning/my_links.csv
 /.streamlit/secrets.toml
 
 # Python

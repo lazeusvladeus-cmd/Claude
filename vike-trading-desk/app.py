@@ -3,7 +3,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from desk import ui_prep
+from desk import ui_learning, ui_prep
 from desk.config import ConfigError, ensure_user_config, load_config
 
 APP_DIR = Path(__file__).resolve().parent
@@ -33,8 +33,4 @@ with tab_research:
     st.caption(f"Your coverage list (from config.toml): {coverage or 'empty'}")
 
 with tab_learn:
-    st.info(
-        "**Coming in Phase 2.** Your learning roadmap: modules from futures basics to Context → Location → "
-        "Confirmation and coded backtesting, mapped to weeks 1-12, with verified resource links and progress "
-        "checkboxes that save."
-    )
+    ui_learning.render(cfg)

@@ -1,0 +1,417 @@
+# ==========================================================================
+#  YOUR LEARNING ROADMAP  (shown in the "Learning Roadmap" tab)
+# --------------------------------------------------------------------------
+#  Module texts live here; resource links live in links.csv (checked links)
+#  and my_links.csv (links YOU add - in the app or with Excel/Notepad).
+#  You can edit the texts below with Notepad. Keep the """ quotes.
+#  Your progress (checkboxes, notes) is stored separately, so editing this
+#  file never loses it.
+# ==========================================================================
+
+[plan]
+title = "12-week plan: NQ order flow (Context → Location → Confirmation) + equity analysis"
+stages = [
+    { weeks = [1, 4], name = "Daily session review", detail = "Prep before 15:00 Kyiv, review every session in the Journal tab." },
+    { weeks = [5, 10], name = "Manual backtest in ATAS", detail = "Replay NQ sessions in ATAS Market Replay and log every Context → Location → Confirmation setup." },
+    { weeks = [8, 12], name = "Coded backtest", detail = "Turn the measurable parts of your playbook into Python statistics on years of data." },
+]
+
+[[weeks]]
+week = 1
+focus = "Foundations: how NQ futures work, start your daily journal, learn to read a 10-K."
+[[weeks]]
+week = 2
+focus = "Auction market theory (Context) and economic events."
+[[weeks]]
+week = 3
+focus = "Volume & market profile (Location); the three financial statements."
+[[weeks]]
+week = 4
+focus = "First steps in order flow + VWAP; finish the four weeks of daily reviews."
+[[weeks]]
+week = 5
+focus = "Order flow in depth, set up ATAS Market Replay, begin your Context → Location → Confirmation playbook; DCF."
+[[weeks]]
+week = 6
+focus = "Write and replay-test your playbook; options flow and dealer positioning."
+[[weeks]]
+week = 7
+focus = "Options levels as extra Locations; risk management and R-multiples."
+[[weeks]]
+week = 8
+focus = "Manual backtesting continues; first Python + pandas; bank analysis."
+[[weeks]]
+week = 9
+focus = "Manual backtest statistics; load NQ data in pandas; bank ratios."
+[[weeks]]
+week = 10
+focus = "Finish 30+ replayed trades; first coded event study; valuing an ad business."
+[[weeks]]
+week = 11
+focus = "Coded backtest of one CLC rule with costs; ad KPIs for META."
+[[weeks]]
+week = 12
+focus = "Out-of-sample check, review all modules, write your final playbook and theses."
+
+
+# ------------------------------------------------------------------ TRADING TRACK
+
+[[modules]]
+id = "T1"
+track = "Trading"
+title = "Futures basics: NQ/ES specs, ticks, sessions, margin, rollover"
+weeks = [1]
+learn = """
+- **NQ** = $20 × Nasdaq-100 index; 1 tick = 0.25 points = **$5**. **MNQ** (micro) = $2 × index, 1 tick = $0.50 (one tenth). **ES** = $50 × S&P 500, 1 tick = $12.50.
+- **Sessions:** Globex runs Sunday 18:00 to Friday 17:00 New York, with a daily pause 17:00-18:00. **RTH** (regular trading hours) is 09:30-16:00 NY = 16:30-23:00 Kyiv for most of the year.
+- **Margin:** initial vs maintenance margin; a broker's day-trading margin is not your risk - your stop is.
+- **Expiry & rollover:** quarterly contracts H (Mar), M (Jun), U (Sep), Z (Dec) expire on the third Friday; traders roll about 8 days earlier and the ATAS symbol changes (e.g. NQZ26 → NQH27).
+- **Notional value:** at ~30,000 one NQ controls ~$600,000 of index - which is why micros exist.
+"""
+why = """
+Every level, stop and target you plan is measured in points and ticks, and your risk per trade is ticks × $5 (NQ) or × $0.50 (MNQ).
+Knowing the sessions explains why your prep sheet separates the overnight (Globex) range from the regular session, and rollover explains the
+app's warning in roll weeks.
+"""
+exercise = """
+On today's NQ chart in ATAS:
+1. Find the current front contract code and the next one; note the roll date (the prep sheet shows it too).
+2. Measure yesterday's RTH range in points, ticks, and dollars for 1 NQ and 1 MNQ.
+3. Mark the 18:00 NY Globex open, the 09:30 open and the 16:00 close; compare the overnight range with the RTH range.
+4. Complete the sentence in your notes: "If my stop is 20 points, 1 NQ risks $___ and 1 MNQ risks $___."
+"""
+
+[[modules]]
+id = "T2"
+track = "Trading"
+title = "Market structure & auction market theory (balance vs imbalance)"
+weeks = [2]
+learn = """
+- The market is a two-way **auction**: price advertises, time regulates, volume measures acceptance.
+- **Balance** (rotation inside value) vs **imbalance** (initiative move searching for new value); **acceptance** vs **rejection**.
+- **Responsive** vs **initiative** activity; **excess** (tails) and poor highs/lows.
+- The **open relative to prior value**: inside value, outside value but inside the range, outside the range - and what each usually implies.
+- Multi-day **brackets** (balance) vs trending sequences.
+"""
+why = """
+This is the **Context** step of Context → Location → Confirmation. Before you look at a single footprint, you decide whether NQ is balancing
+(fade the edges) or imbalanced (go with the initiative side). The context hints on your prep sheet use exactly these rules.
+"""
+exercise = """
+For the last 10 NQ sessions (ATAS, 30-minute chart with session profiles), make a table in your notes:
+date · Balance or Imbalance · where it opened vs prior value (inside / above / below) · did price accept outside value (an hour or more)?
+After 10 rows, write one pattern you noticed.
+"""
+
+[[modules]]
+id = "T3"
+track = "Trading"
+title = "Volume profile & market profile (value area, POC, single prints, naked POCs)"
+weeks = [3]
+learn = """
+- **Volume profile** (volume at each price) vs **market profile / TPO** (time at each price).
+- **POC**, **value area** (70% of volume), **VAH / VAL**, high- and low-volume nodes (HVN / LVN).
+- **Single prints** and **tails** on the TPO profile: fast moves and excess at extremes.
+- **Profile shapes:** D (balanced), P and b (short covering / long liquidation), thin trend profiles, double distributions.
+- **Naked (virgin) POCs**, developing POC, weekly and composite profiles.
+"""
+why = """
+Profiles give you the **Location** step: VAH, VAL, POC, single prints and naked POCs are where responsive traders show up - and where you wait
+for order-flow confirmation instead of trading in the middle of nowhere.
+"""
+exercise = """
+In ATAS add a daily (RTH) volume profile and market profile to NQ. For the last 5 sessions mark VAH, VAL, POC, single prints and naked POCs.
+Compare them with your prep sheet (they should agree within a few ticks) and note for each level how price reacted the next day:
+rejected, accepted, or ignored.
+"""
+
+[[modules]]
+id = "T4"
+track = "Trading"
+title = "Order flow in ATAS: footprint, delta, CVD, imbalances, absorption, exhaustion, DOM"
+weeks = [4, 5]
+learn = """
+- **Footprint (cluster) chart:** bid × ask, delta and volume modes - reading what happened inside each candle.
+- **Delta** and **cumulative delta (CVD):** who was aggressive, and divergences between delta and price.
+- **Imbalances** (diagonal ask vs bid, e.g. 300%) and **stacked imbalances** (3+ levels) as initiative activity.
+- **Absorption** (heavy volume, price doesn't move) vs **exhaustion** (volume dries up at the extreme, no follow-through).
+- **DOM basics:** resting liquidity, pulling and stacking, icebergs; ATAS Smart DOM.
+"""
+why = """
+This is your **Confirmation** step. At a planned location you only enter when ATAS shows absorption or exhaustion against the move, or stacked
+imbalances in your direction. Your edge is waiting for that evidence - not predicting.
+"""
+exercise = """
+Use ATAS Market Replay on 3 recent NQ sessions. Every time price touches a level from your prep sheet, screenshot the footprint and write:
+delta at the touch, any absorption / exhaustion / stacked imbalances, and what price did in the next 15 minutes.
+Collect 15 screenshots sorted into "reversal", "breakout" and "nothing happened".
+"""
+
+[[modules]]
+id = "T5"
+track = "Trading"
+title = "VWAP and anchored VWAP"
+weeks = [4]
+learn = """
+- **Session VWAP:** the volume-weighted average price since the open; standard-deviation bands.
+- **Prior-day VWAP** as a level (it's on your prep sheet).
+- **Anchored VWAP** from swing highs/lows, gaps, news candles or the weekly open.
+- VWAP as fair value: trend days hold one side of VWAP, balance days rotate around it.
+"""
+why = """
+VWAP shows who is in control today - is price above or below the average participant's price? That's **Context**. Anchored VWAPs from key
+events add **Locations** that many institutions also watch.
+"""
+exercise = """
+On 5 NQ sessions plot RTH VWAP plus anchored VWAPs from the prior day's high and low in ATAS. For each session note whether price stayed on one
+side of VWAP all day (trend) or crossed it 3+ times (balance), and compare with the day type in your journal reviews.
+"""
+
+[[modules]]
+id = "T6"
+track = "Trading"
+title = "Context → Location → Confirmation (Aleks Rosme's method)"
+weeks = [5, 6]
+learn = """
+- **Context:** the regime first - trend or balance, volatility, gamma environment, news. Skip low-probability conditions.
+- **Location:** trade only at levels defined *before* the session (profile, prior day, VWAP, options/GEX levels) - never in the middle.
+- **Confirmation:** order flow at the level (absorption, delta shift, imbalances), ideally agreeing with options flow (net premium / net drift).
+- How order flow and options flow fit together: dealer hedging creates part of the futures flow.
+- Writing a one-page playbook: your A+ setup in CLC terms with entry, stop and target rules.
+"""
+why = """
+This *is* your strategy. Every other module feeds one of the three steps, and the prep sheet + checklist in the Pre-Session Prep tab is this
+process written down every morning.
+"""
+exercise = """
+Watch Aleks Rosme's "How to Avoid Low Probability Conditions" and "How to Put Orderflow on STEROIDS with GEX" (links below).
+Then write your own one-page playbook in this module's notes: 3 context conditions you require, 5 location types, 3 confirmations, and your
+stop/target rule. Apply it in Market Replay to 5 NQ sessions and count how many A+ setups appeared.
+"""
+
+[[modules]]
+id = "T7"
+track = "Trading"
+title = "Options flow & dealer positioning (gamma exposure, key options levels)"
+weeks = [6, 7]
+learn = """
+- Why dealers hedge: delta-hedging the options they sold or bought creates futures and ETF flows.
+- **Gamma exposure (GEX):** positive gamma → dealers dampen moves (mean reversion); negative gamma → they amplify moves (trends); the gamma flip.
+- Key options levels: call wall, put wall, high open-interest strikes, 0DTE flows.
+- **Vanna** (implied-volatility changes) and **charm** (time decay) flows, especially into monthly expiration and the close.
+- Tools like **QuantData** (net drift, GEX by strike) and **OptionsDepth** (dealer positioning); converting QQQ/NDX levels to NQ prices.
+"""
+why = """
+Aleks Rosme combines options flow with order flow: GEX levels become extra **Locations**, and the gamma regime is part of **Context**
+(a trending day vs a mean-reverting day).
+"""
+exercise = """
+For 5 sessions note the gamma regime and 2-3 key strikes for QQQ/NDX (from a QuantData / OptionsDepth trial or free sources), convert them to
+NQ prices and add them to "Extra levels" on your prep sheet. After the session: did price react there? Was the day trend or rotation, as the
+gamma regime suggested?
+"""
+
+[[modules]]
+id = "T8"
+track = "Trading"
+title = "Economic events and how they move NQ"
+weeks = [2]
+learn = """
+- Tier-1 releases: **CPI**, **NFP** (jobs report), **FOMC** (decision 14:00 NY, press conference 14:30), PCE, GDP, retail sales, ISM - and mega-cap
+  tech earnings (NVDA, MSFT, AAPL...).
+- 08:30 NY releases land **before** the 09:30 open (15:30 Kyiv): they reshape the overnight range and the opening gap.
+- Forecast vs actual vs revisions; rate expectations (CME FedWatch); yields and the dollar → NQ.
+- Rules around news: no new trades minutes before a release; first spike often reverses; stand aside or widen stops.
+"""
+why = """
+News is part of **Context**: a CPI morning creates imbalance and volatility, and an FOMC afternoon can flip the regime mid-session. Your prep
+sheet lists the day's events in Kyiv and NY time so you're never surprised.
+"""
+exercise = """
+For the next 3 high-impact releases: before the release, write the forecast and what you expect NQ to do. Afterwards, measure NQ's move in the
+first 5 and 30 minutes and whether it reversed. Keep the table in this module's notes.
+"""
+
+[[modules]]
+id = "T9"
+track = "Trading"
+title = "Risk management: position sizing, R-multiples, max daily loss, prop firm rules"
+weeks = [7]
+learn = """
+- **R-multiples:** 1R = your planned loss (entry-to-stop × $ per point × contracts); measure every result in R; **expectancy** = average R.
+- **Position sizing:** contracts = risk per trade ÷ (stop in points × $ per point). Micros (MNQ) let you size small.
+- Hard limits: **max daily loss**, max trades per day, weekly loss limit.
+- **Prop firm rules:** trailing maximum loss (drawdown), daily loss limit, consistency and news rules.
+- Survival math: losing streaks happen; with 1% risk, 10 losses in a row = -10%.
+"""
+why = """
+Order-flow setups have small stops but losses come in clusters. R-based sizing and hard daily limits keep you in the game long enough for your
+edge to show - and they're exactly how prop firms judge you.
+"""
+exercise = """
+Build your risk table: for stops of 10, 20 and 30 NQ points calculate $ risk for 1 NQ and for 1-5 MNQ. Choose a fixed $ risk per trade and a
+max daily loss, and put them in config.toml ([risk]). In Market Replay simulate 20 trades, record each in R, then compute win rate, average win
+and loss in R, and expectancy.
+"""
+
+[[modules]]
+id = "T10"
+track = "Trading"
+title = "Trading psychology & journaling"
+weeks = [1]
+learn = """
+- **Process over outcome:** grade your execution (did I follow CLC?), not your P/L.
+- Common traps: FOMO, revenge trading, moving stops, over-trading after a big win or loss.
+- Journaling: the pre-session plan (prep sheet), the post-session review, and a weekly review of patterns.
+- Routines: same prep every day, a pause rule after a loss, stopping at your max loss.
+"""
+why = """
+Your edge is patience - waiting for confirmation at a location. Psychology is what breaks that patience. The Journal & review part of the
+Pre-Session Prep tab is built for exactly this.
+"""
+exercise = """
+Every weekday in weeks 1-4: save a prep plan before 15:00 Kyiv and a review after the session (or the next morning) in the Journal & review
+tab - grade your process and tag mistakes. Every Sunday, read the week's reviews and write 3 lessons in this module's notes.
+"""
+
+[[modules]]
+id = "T11"
+track = "Trading"
+title = "Manual backtesting process in ATAS (Market Replay)"
+weeks = [5, 6, 7, 8, 9, 10]
+learn = """
+- ATAS **Market Replay**: replaying historical tick data with footprint and DOM, speed control, the Replay account statistics.
+- Define the setup precisely *before* testing (your CLC rules); collect a real sample (30-50+ trades).
+- Log every trade: date, context, location, confirmation, entry / stop / target, result in R, screenshot.
+- Avoid hindsight bias: hide the future and decide before you press Play.
+"""
+why = """
+Weeks 5-10 of your plan: you prove (or disprove) the CLC playbook on many sessions before risking money - and produce the statistics you'll
+need for a prop firm challenge.
+"""
+exercise = """
+Replay 2-3 NQ sessions a week (RTH 09:30-11:30 NY). Log every A+ setup in a spreadsheet with the fields above. After 30 trades calculate win
+rate, average R, expectancy and the longest losing streak, and decide which confirmation filters improved the results.
+"""
+
+[[modules]]
+id = "T12"
+track = "Trading"
+title = "Coded backtesting basics (weeks 8-12)"
+weeks = [8, 9, 10, 11, 12]
+learn = """
+- Python basics: variables, lists, functions, loops, reading a CSV file.
+- **pandas:** DataFrames, filtering, resampling minute bars, grouping by session.
+- Data: continuous vs individual contracts, roll adjustment; costs (commission + slippage) on every trade.
+- Start with **event studies** ("when NQ opens above prior VAH, how often does it return to the POC?") before full strategies.
+- Pitfalls: look-ahead bias, overfitting, too few trades; keep data aside for an out-of-sample test.
+"""
+why = """
+In weeks 8-12 you turn the measurable parts of CLC - levels, open location, gaps, gamma regime - into statistics over years of NQ data.
+This app already calculates those levels in Python, so you can reuse its code.
+"""
+exercise = """
+Using the app's saved NQ 5-minute data (data/cache) or a Databento sample: (1) load it with pandas, (2) compute each day's prior VAH/VAL/POC by
+reusing desk/levels.py, (3) answer one question - "If NQ opens above prior VAH, how often does it trade back to the prior POC before 12:00 NY?"
+Write the answer and the number of days tested in this module's notes.
+"""
+
+
+# ------------------------------------------------------------------ EQUITY ANALYSIS TRACK
+
+[[modules]]
+id = "E1"
+track = "Equity"
+title = "Reading a 10-K"
+weeks = [1, 2]
+learn = """
+- The 10-K's parts: Item 1 Business, 1A Risk Factors, 7 MD&A (management's discussion), 8 Financial Statements and notes.
+- 10-K (annual) vs 10-Q (quarterly) vs 8-K (events); proxy statement (DEF 14A) for management pay and incentives.
+- Finding filings with SEC EDGAR search; where company KPIs usually live (MD&A and earnings releases).
+"""
+why = """
+The Equity Research tab pulls its numbers from these filings. Reading the 10-K tells you what the numbers mean and what drives them - the base
+of every thesis you write.
+"""
+exercise = """
+Open MSFT's latest 10-K on EDGAR. In MSFT's notes in the Equity Research tab write: 5 lines on how it makes money (segments), the top 3 risk
+factors, and 2 numbers from MD&A. Repeat for JPM and META.
+"""
+
+[[modules]]
+id = "E2"
+track = "Equity"
+title = "The three financial statements"
+weeks = [3, 4]
+learn = """
+- **Income statement:** revenue → gross profit → operating income → net income.
+- **Balance sheet:** assets = liabilities + equity.
+- **Cash flow statement:** operating cash flow, capex, free cash flow (FCF).
+- How they link: net income → retained earnings, depreciation, working capital, stock-based compensation; accrual vs cash.
+"""
+why = """
+Every tear-sheet metric (margins, FCF, ROIC, debt, share count) comes from these three statements. Knowing how they link lets you spot quality
+problems such as profits that never turn into cash.
+"""
+exercise = """
+For MSFT's last fiscal year in the tear sheet: explain the gap between net income and operating cash flow, check FCF = operating cash flow -
+capex, and confirm the app's numbers against the 10-K.
+"""
+
+[[modules]]
+id = "E3"
+track = "Equity"
+title = "DCF valuation (discounted cash flow)"
+weeks = [5, 6, 7]
+learn = """
+- Free cash flow to the firm: revenue growth, operating margin, taxes, reinvestment (sales-to-capital).
+- The discount rate (WACC: cost of equity via CAPM, cost of debt) and the terminal value.
+- From firm value to value per share: + cash, - debt, ÷ diluted shares.
+- Sensitivity analysis and the **reverse DCF** (what growth does today's price imply?).
+"""
+why = """
+The DCF in the Equity Research tab is only as good as the story behind it. Damodaran's method: story → numbers → value - and the sensitivity
+chart shows which assumption really matters.
+"""
+exercise = """
+In the Equity Research tab for MSFT: set growth and margins from your 10-K reading and record the value. Use the sensitivity chart to find the
+assumption that moves value most. Then do a reverse DCF: change growth until value = price. Is that growth believable?
+"""
+
+[[modules]]
+id = "E4"
+track = "Equity"
+title = "Bank analysis (why DCF doesn't fit banks)"
+weeks = [8, 9]
+learn = """
+- Why a DCF doesn't fit banks: debt is their raw material, and capex / working capital are not defined.
+- Bank income statement: net interest income, noninterest income, provisions for credit losses, noninterest expense.
+- Key ratios: **NIM**, **efficiency ratio**, **ROE / ROTCE**, **P/B** and **P/TBV**, **CET1**, net charge-offs, loan and deposit growth.
+- Justified P/B = (ROE - g) / (cost of equity - g); interest-rate sensitivity; the credit cycle.
+"""
+why = """
+JPM is on your coverage list, and the Equity Research tab switches to bank metrics for banks.
+"""
+exercise = """
+For JPM: record ROTCE, efficiency ratio, CET1 (from the 10-K if it isn't filled in automatically) and P/TBV from the tear sheet. Use the justified
+P/B slider: what ROE is the market pricing in? Compare it with JPM's actual ROE over 5 years.
+"""
+
+[[modules]]
+id = "E5"
+track = "Equity"
+title = "Valuing an ad-driven business"
+weeks = [10, 11, 12]
+learn = """
+- Revenue = users × engagement × ads shown × price per ad.
+- KPIs: daily active users / people (DAU / DAP), revenue per user (ARPU / ARPP), ad impressions growth, average price per ad.
+- Cyclicality of ad budgets, privacy and regulation risk, AI capex; aggregator economics.
+- Valuing users (Damodaran's user-based valuation).
+"""
+why = """
+META is your ad-driven company; the Equity Research tab tracks its ad KPIs next to the financials.
+"""
+exercise = """
+From Meta's last 4 quarterly earnings releases fill the KPI tracker in the Equity Research tab: DAP, ARPP, ad impressions growth % and price per
+ad growth %. Explain revenue growth as impressions growth × price-per-ad growth, then write your thesis and 3 risks in META's notes.
+"""

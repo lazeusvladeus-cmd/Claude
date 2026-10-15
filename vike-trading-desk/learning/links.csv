@@ -1,0 +1,51 @@
+module,title,url,kind,source,note
+T1,E-mini Nasdaq-100 (NQ) contract specs,https://www.cmegroup.com/markets/equities/nasdaq/e-mini-nasdaq-100.contractSpecs.html,Official docs,CME Group,"Tick size ($5), contract unit ($20 x index), trading hours, contract months."
+T1,Understanding Futures Expiration & Contract Roll,https://www.cmegroup.com/education/courses/introduction-to-futures/understanding-futures-expiration-contract-roll.html,Course lesson,CME Group,"Offset, roll or settle: what happens when a contract expires."
+T1,Margin: Know What's Needed,https://www.cmegroup.com/education/courses/introduction-to-futures/margin-know-what-is-needed.html,Course lesson,CME Group,Initial vs maintenance margin and margin calls.
+T1,Micro E-mini Nasdaq-100 (MNQ),https://www.cmegroup.com/markets/equities/nasdaq/micro-e-mini-nasdaq-100.html,Official docs,CME Group,$2 per point: the contract to learn and size small with.
+T2,The Auction Market Theory: the most important things,https://atas.net/blog/the-auction-market-theory/,Article,ATAS,"Responsive vs initiative activity, value, balance areas."
+T2,Intro to auction market theory and market profile,https://www.topstep.com/blog/intro-to-auction-market-theory-and-market-profile,Article,Topstep,"Fair vs unfair prices, balance vs imbalance, TPO and value area."
+T2,Simple Guide to Auction Market Theory,https://bookmap.com/blog/understanding-market-moves-the-principles-of-auction-market-theory,Article,Bookmap,"Value areas, excess, acceptance and rejection."
+T3,Volume profile indicators: basic concepts,https://www.tradingview.com/support/solutions/43000502040-volume-profile-indicators-basic-concepts/,Official docs,TradingView,"POC, value area, VAH/VAL, high and low volume nodes."
+T3,Volume Profile: how does it work? (incl. TPO / market profile),https://atas.net/blog/volume-profile/,Article,ATAS,Volume profile vs market profile (TPO) in ATAS with examples.
+T4,How to Read Footprint Charts and Use Clusters,https://atas.net/blog/how-to-read-footprint/,Article,ATAS,"Opening, configuring and reading the footprint chart."
+T4,Delta and Cumulative Delta: what are they?,https://atas.net/blog/what-is-delta/,Article,ATAS,"Bar delta, cumulative delta and delta divergences."
+T4,Absorption of demand and supply in the footprint chart,https://atas.net/blog/absorption-of-demand-and-supply-in-the-footprint-chart/,Article,ATAS,Spotting absorption at support/resistance (ES example).
+T4,The Depth of Market (DOM) indicator: pros and cons,https://atas.net/blog/depth-of-market/,Article,ATAS,"DOM basics, manipulation, Smart DOM."
+T5,Volume Weighted Average Price (VWAP),https://www.tradingview.com/support/solutions/43000502018-volume-weighted-average-price-vwap/,Official docs,TradingView,How VWAP is calculated and read.
+T5,Anchored VWAP drawing tool,https://www.tradingview.com/support/solutions/43000669764-anchored-vwap-drawing-tool/,Official docs,TradingView,Anchoring VWAP to a chosen event and its history.
+T5,Anchored Volume Weighted Average Price (A-VWAP),https://www.interactivebrokers.com/campus/glossary-terms/anchored-volume-weighted-average-price-a-vwap/,Article,IBKR Campus,Why and where traders anchor VWAP.
+T6,Aleks Rosme - YouTube channel (optionsflow x orderflow),https://www.youtube.com/@aleks_rosme,Channel,Aleks Rosme,His main channel (linked from his official site).
+T6,How to Avoid Low Probability Conditions,https://www.youtube.com/watch?v=pIycqRtYYMU,Video,Aleks Rosme,"The Context step: market regime, VIX, gamma, adapting risk."
+T6,How to Put Orderflow on STEROIDS with GEX,https://www.youtube.com/watch?v=sFra3uePCKU,Video,Aleks Rosme,"Context and location first, then order flow + options flow."
+T6,Aleks Rosme - official links (TikTok @aleks_rosme / Discord / tools),https://www.aleksrosme.com/,Website,Aleks Rosme,His link page: TikTok @aleks_rosme and his free Discord.
+T7,Options Flow: The Edge You've Been Looking For,https://www.youtube.com/watch?v=GE4JISxYuXY,Video,Aleks Rosme,"Dealer hedging, DEX, GEX, positive vs negative gamma, vanna, charm."
+T7,Gamma Exposure (GEX) white paper,https://squeezemetrics.com/monitor/download/pdf/white_paper.pdf,PDF,SqueezeMetrics,The original paper behind GEX: how dealer hedging dampens or amplifies moves.
+T7,Delta Hedging Fundamentals,https://www.optionsdepth.com/resouce/delta-hedging-fundamentals,Article,OptionsDepth,"How market makers hedge; gamma, charm and vanna flows; 0DTE."
+T7,Mastering the Net Drift Tool,https://help.quantdata.us/en/articles/9900974-mastering-the-net-drift-tool-leveraging-order-flow-sentiment-for-smarter-options-trading,Official docs,QuantData,Reading call vs put premium flow (the tool Aleks uses).
+T8,FOMC meeting calendars,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,Official calendar,Federal Reserve,Rate decision dates (statement 14:00 NY).
+T8,Schedule of selected releases (CPI / NFP / PPI),https://www.bls.gov/schedule/news_release/,Official calendar,U.S. Bureau of Labor Statistics,Release dates and times of the jobs report and CPI.
+T8,CME FedWatch,https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html,Tool,CME Group,Rate-move probabilities implied by Fed Funds futures.
+T8,Release schedule (GDP / PCE),https://www.bea.gov/news/schedule,Official calendar,U.S. Bureau of Economic Analysis,GDP and PCE inflation release dates.
+T9,R-Multiples,https://nexusfi.com/a/risk-management/r-multiples,Article,NexusFi Academy,"1R, expectancy and position sizing for futures."
+T9,What is the Maximum Loss Limit?,https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit,Official docs,Topstep,How a prop firm's trailing drawdown works.
+T9,Daily Loss Limit in the Trading Combine,https://help.topstep.com/en/articles/10490293-daily-loss-limit-in-the-trading-combine-and-express-funded-account,Official docs,Topstep,What happens when you hit a daily loss limit.
+T10,TraderFeed (Brett Steenbarger),https://traderfeed.blogspot.com/,Blog,Brett Steenbarger,"Trading psychology, self-coaching and journaling."
+T10,Trading in the Zone (Mark Douglas),https://www.penguinrandomhouse.com/books/350665/trading-in-the-zone-by-mark-douglas/,Book,Penguin Random House,The classic on probabilistic thinking and discipline.
+T10,Playbook: 7 steps for working through any trade,https://atas.net/blog/playbook/,Article,ATAS,SMB Capital's playbook method for documenting your best setups.
+T11,ATAS Market Replay - a unique exchange simulator,https://atas.net/blog/atas-market-replay/,Article,ATAS,"Setting up Replay, trading it, and reading the statistics."
+T11,Market Replay: a Unique Simulator for Traders,https://www.youtube.com/watch?v=mGGhtsJgMQQ,Video,ATAS (official channel),5-minute walkthrough of Market Replay.
+T12,Getting started with Databento,https://databento.com/docs/quickstart,Official docs,Databento,"API keys, historical data, Python client - for weeks 8-12."
+T12,The Python Tutorial,https://docs.python.org/3/tutorial/,Official docs,Python.org,"Variables, lists, loops, functions - start here."
+T12,10 minutes to pandas,https://pandas.pydata.org/docs/user_guide/10min.html,Official docs,pandas,"DataFrames, filtering, grouping, reading CSV/Parquet."
+E1,How to Read a 10-K,https://www.investor.gov/introduction-investing/getting-started/researching-investments/how-read-10-k,Official guide,Investor.gov (SEC),"Business, risk factors, MD&A, financial statements."
+E1,EDGAR full text search,https://www.sec.gov/edgar/search/,Tool,SEC,Find any 10-K / 10-Q / 8-K and search inside filings.
+E2,Beginners' Guide to Financial Statements,https://www.sec.gov/about/reports-publications/beginners-guide-financial-statements,Official guide,SEC,"Balance sheet, income statement, cash flow, key ratios."
+E2,Aswath Damodaran - YouTube (Accounting & Valuation playlists),https://www.youtube.com/@AswathDamodaranonValuation,Channel,Aswath Damodaran (NYU Stern),Free full classes; the Accounting playlist covers the three statements.
+E3,Damodaran Online,https://pages.stern.nyu.edu/~adamodar/,Course + tools,Aswath Damodaran (NYU Stern),"Free valuation classes, spreadsheets and papers."
+E3,Damodaran: data for the current year,https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datacurrent.html,Data,Aswath Damodaran (NYU Stern),"Cost of capital, margins and multiples by industry."
+E4,Valuing Financial Service Firms (2009),https://pages.stern.nyu.edu/~adamodar/pdfiles/papers/finfirm09.pdf,PDF,Aswath Damodaran (NYU Stern),Why banks need equity models (dividends / excess returns) instead of DCF.
+E4,Annual Large Bank Capital Requirements (CET1),https://www.federalreserve.gov/supervisionreg/large-bank-capital-requirements.htm,Official docs,Federal Reserve,"CET1 minimum 4.5% + stress capital buffer + G-SIB surcharge, per bank."
+E5,Meta Investor Relations,https://investor.atmeta.com/,Official site,Meta Platforms,"Earnings releases and slides: DAP, ARPP, ad impressions, price per ad."
+E5,"User-based value: the good, the bad and the ugly",https://pages.stern.nyu.edu/~adamodar/pdfiles/blog/UserbasedValue.pdf,PDF,Aswath Damodaran (NYU Stern),"How to value users and subscribers, incl. ad-driven models."
+E5,Aggregation Theory,https://stratechery.com/aggregation-theory/,Article,Stratechery (Ben Thompson),Why platforms like Meta and Google dominate advertising.

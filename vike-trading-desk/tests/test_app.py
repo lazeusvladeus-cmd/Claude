@@ -71,3 +71,15 @@ def test_config_typo_shows_friendly_error(monkeypatch):
     at = AppTest.from_file(str(APP_DIR / "app.py"), default_timeout=60).run()
     assert not at.exception
     assert "settings file needs a fix" in at.error[0].value
+
+
+def test_learning_tab_checkbox_saves(app):
+    at, cfg = app
+    at.run()
+    assert not at.exception, at.exception
+    assert any("12-week plan" in h.value for h in at.subheader)
+    box = next(c for c in at.checkbox if c.key and c.key.startswith("chk_link|T1|"))
+    box.check().run()
+    assert not at.exception, at.exception
+    saved = (cfg.app_dir / "data" / "learning_progress.json").read_text(encoding="utf-8")
+    assert "link|T1|" in saved
